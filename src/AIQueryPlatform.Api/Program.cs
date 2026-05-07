@@ -3,8 +3,13 @@ using AIQueryPlatform.Api.Middleware;
 using AIQueryPlatform.Api.Models;
 using AIQueryPlatform.Api.Services;
 using AIQueryPlatform.Api.Services.Interfaces;
+using AIQueryPlatform.Api.Services.PromptBuilders;
+using AIQueryPlatform.Api.Services.Executors;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Add appsettings.Local.json support for local secrets
+builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
 
 // Configure Serilog
 Log.Logger = new LoggerConfiguration()
@@ -83,6 +88,19 @@ builder.Services.AddResponseCompression(options =>
 
 // Register scoped TenantContext
 builder.Services.AddScoped<TenantContext>();
+
+// Register database prompt builders
+builder.Services.AddScoped<SqlServerPromptBuilder>();
+builder.Services.AddScoped<MySqlPromptBuilder>();
+builder.Services.AddScoped<PostgreSqlPromptBuilder>();
+builder.Services.AddScoped<ExcelPromptBuilder>();
+builder.Services.AddScoped<DatabasePromptBuilderFactory>();
+
+// Register database executors
+builder.Services.AddScoped<IDatabaseExecutor, SqlServerExecutor>();
+builder.Services.AddScoped<IDatabaseExecutor, MySqlExecutor>();
+builder.Services.AddScoped<IDatabaseExecutor, PostgreSqlExecutor>();
+builder.Services.AddScoped<IDatabaseExecutor, ExcelExecutor>();
 
 // Register services
 builder.Services.AddSingleton<ITenantService, TenantService>();

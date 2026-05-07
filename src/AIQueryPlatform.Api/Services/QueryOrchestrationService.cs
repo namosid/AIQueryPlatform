@@ -105,7 +105,7 @@ public class QueryOrchestrationService : IQueryOrchestrationService
         
         try
         {
-            sql = await _nlToSqlService.ConvertNaturalLanguageToSqlAsync(query, schema!);
+            sql = await _nlToSqlService.ConvertNaturalLanguageToSqlAsync(query, schema!, tenant.DatabaseType);
         }
         catch (Exception ex)
         {
@@ -137,6 +137,16 @@ public class QueryOrchestrationService : IQueryOrchestrationService
             Message = "Validating SQL query..."
         };
 
+        if (sql == null)
+        {
+            yield return new StreamEvent
+            {
+                Type = "error",
+                Message = "SQL validation failed: SQL generation returned null"
+            };
+            yield break;
+        }
+
         if (!_sqlValidatorService.IsValidSelectQuery(sql, out var validationError))
         {
             yield return new StreamEvent
@@ -162,7 +172,7 @@ public class QueryOrchestrationService : IQueryOrchestrationService
         
         try
         {
-            result = await _queryExecutionService.ExecuteQueryAsync(sql!, tenant.ConnectionString);
+            result = await _queryExecutionService.ExecuteQueryAsync(sql!, tenant.ConnectionString, tenant.DatabaseType);
         }
         catch (Exception ex)
         {
@@ -176,6 +186,16 @@ public class QueryOrchestrationService : IQueryOrchestrationService
             {
                 Type = "error",
                 Message = executionError.Message
+            };
+            yield break;
+        }
+
+        if (result == null)
+        {
+            yield return new StreamEvent
+            {
+                Type = "error",
+                Message = "Query execution returned no results"
             };
             yield break;
         }
@@ -258,7 +278,7 @@ public class QueryOrchestrationService : IQueryOrchestrationService
             var schema = await _schemaService.GetDatabaseSchemaAsync(tenant.ConnectionString, tenant.TenantId);
 
             // Convert NL to SQL
-            var sql = await _nlToSqlService.ConvertNaturalLanguageToSqlAsync(query, schema);
+            var sql = await _nlToSqlService.ConvertNaturalLanguageToSqlAsync(query, schema, tenant.DatabaseType);
 
             // Validate SQL
             if (!_sqlValidatorService.IsValidSelectQuery(sql, out var validationError))
@@ -275,7 +295,7 @@ public class QueryOrchestrationService : IQueryOrchestrationService
             sql = _sqlValidatorService.EnforceRowLimit(sql, _maxRowLimit);
 
             // Execute query
-            var result = await _queryExecutionService.ExecuteQueryAsync(sql, tenant.ConnectionString);
+            var result = await _queryExecutionService.ExecuteQueryAsync(sql, tenant.ConnectionString, tenant.DatabaseType);
 
             // Determine visualization type
             var visualizationType = _intelligenceLayerService.DetermineVisualizationType(query, result);

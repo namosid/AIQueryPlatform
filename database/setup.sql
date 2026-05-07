@@ -19,6 +19,8 @@ BEGIN
         Name NVARCHAR(255) NOT NULL,
         ApiKey NVARCHAR(500) NOT NULL UNIQUE,
         ConnectionString NVARCHAR(1000) NOT NULL,
+        DatabaseType INT NOT NULL DEFAULT 0, -- 0=SqlServer, 1=MySql, 2=PostgreSql, 3=Excel, 4=Sqlite
+        DatabaseSettings NVARCHAR(MAX) NULL, -- JSON string for additional settings
         LogoUrl NVARCHAR(500) NULL,
         ThemeColor NVARCHAR(50) NULL,
         IsActive BIT NOT NULL DEFAULT 1,
@@ -28,18 +30,28 @@ BEGIN
 
     CREATE INDEX IX_Tenants_ApiKey ON Tenants(ApiKey);
     CREATE INDEX IX_Tenants_IsActive ON Tenants(IsActive);
+    CREATE INDEX IX_Tenants_DatabaseType ON Tenants(DatabaseType);
+END
+ELSE IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('Tenants') AND name = 'DatabaseType')
+BEGIN
+    -- Add new columns to existing table
+    ALTER TABLE Tenants ADD DatabaseType INT NOT NULL DEFAULT 0;
+    ALTER TABLE Tenants ADD DatabaseSettings NVARCHAR(MAX) NULL;
+    CREATE INDEX IX_Tenants_DatabaseType ON Tenants(DatabaseType);
 END
 GO
 
 -- Insert sample tenants
 IF NOT EXISTS (SELECT * FROM Tenants WHERE ApiKey = 'demo_api_key_12345')
 BEGIN
-    INSERT INTO Tenants (TenantId, Name, ApiKey, ConnectionString, LogoUrl, ThemeColor, IsActive)
+    INSERT INTO Tenants (TenantId, Name, ApiKey, ConnectionString, DatabaseType, DatabaseSettings, LogoUrl, ThemeColor, IsActive)
     VALUES (
         '11111111-1111-1111-1111-111111111111',
         'Demo Tenant',
         'demo_api_key_12345',
         'Server=MWP336\SQLEXPRESS;Database=DemoTenantDB;Trusted_Connection=true;TrustServerCertificate=true;',
+        0, -- SqlServer
+        NULL,
         'https://example.com/logo.png',
         '#0066CC',
         1
@@ -49,7 +61,8 @@ ELSE
 BEGIN
     -- Update existing tenant to point to correct database
     UPDATE Tenants 
-    SET ConnectionString = 'Server=MWP336\SQLEXPRESS;Database=DemoTenantDB;Trusted_Connection=true;TrustServerCertificate=true;'
+    SET ConnectionString = 'Server=MWP336\SQLEXPRESS;Database=DemoTenantDB;Trusted_Connection=true;TrustServerCertificate=true;',
+        DatabaseType = 0
     WHERE ApiKey = 'demo_api_key_12345';
 END
 GO

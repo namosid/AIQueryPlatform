@@ -9,8 +9,15 @@ public class Tenant
     public string Name { get; set; } = string.Empty;
     public string ApiKey { get; set; } = string.Empty;
     public string ConnectionString { get; set; } = string.Empty;
+    
+    // Database configuration
+    public DatabaseType DatabaseType { get; set; } = DatabaseType.SqlServer;
+    public string? DatabaseSettings { get; set; } // JSON string for additional settings
+    
+    // UI customization
     public string? LogoUrl { get; set; }
     public string? ThemeColor { get; set; }
+    
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }

@@ -1,85 +1,60 @@
+using AIQueryPlatform.Api.Models;
 using AIQueryPlatform.Api.Models.DTOs;
 using AIQueryPlatform.Api.Services.Interfaces;
-using Microsoft.Data.SqlClient;
-using System.Data;
 
 namespace AIQueryPlatform.Api.Services;
 
 /// <summary>
-/// Service for executing SQL queries against tenant databases
+/// Service for executing SQL queries against tenant databases with multi-database support
 /// </summary>
 public class QueryExecutionService : IQueryExecutionService
 {
     private readonly ILogger<QueryExecutionService> _logger;
+    private readonly IServiceProvider _serviceProvider;
     private readonly int _queryTimeoutSeconds;
 
     public QueryExecutionService(
         IConfiguration configuration,
-        ILogger<QueryExecutionService> logger)
+        ILogger<QueryExecutionService> logger,
+        IServiceProvider serviceProvider)
     {
         _logger = logger;
+        _serviceProvider = serviceProvider;
         _queryTimeoutSeconds = configuration.GetValue<int>("QueryExecution:QueryTimeoutSeconds", 30);
     }
 
-    public async Task<QueryResult> ExecuteQueryAsync(string sql, string connectionString)
+    public async Task<QueryResult> ExecuteQueryAsync(string sql, string connectionString, DatabaseType databaseType = DatabaseType.SqlServer)
     {
-        var result = new QueryResult();
-
         try
         {
-            using var connection = new SqlConnection(connectionString);
-            await connection.OpenAsync();
+            _logger.LogInformation("Executing query for database type: {DatabaseType}", databaseType);
 
-            using var command = new SqlCommand(sql, connection)
-            {
-                CommandTimeout = _queryTimeoutSeconds,
-                CommandType = CommandType.Text
-            };
-
-            _logger.LogInformation("Executing SQL query");
-
-            using var reader = await command.ExecuteReaderAsync();
-
-            // Get column names
-            var schemaTable = reader.GetSchemaTable();
-            if (schemaTable != null)
-            {
-                foreach (DataRow row in schemaTable.Rows)
-                {
-                    result.Columns.Add(row["ColumnName"].ToString() ?? "Unknown");
-                }
-            }
-
-            // Read all rows
-            while (await reader.ReadAsync())
-            {
-                var row = new Dictionary<string, object?>();
-                
-                for (int i = 0; i < reader.FieldCount; i++)
-                {
-                    var columnName = reader.GetName(i);
-                    var value = reader.IsDBNull(i) ? null : reader.GetValue(i);
-                    row[columnName] = value;
-                }
-                
-                result.Rows.Add(row);
-            }
-
-            result.RowCount = result.Rows.Count;
-
-            _logger.LogInformation("Query executed successfully. Rows returned: {RowCount}", result.RowCount);
-
-            return result;
+            // Get the appropriate database executor
+            var executor = GetExecutor(databaseType);
+            
+            return await executor.ExecuteQueryAsync(sql, connectionString, _queryTimeoutSeconds);
         }
-        catch (SqlException ex)
+        catch (InvalidOperationException)
         {
-            _logger.LogError(ex, "SQL execution error: {Message}", ex.Message);
-            throw new InvalidOperationException($"Database error: {ex.Message}", ex);
+            throw;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Query execution error");
+            _logger.LogError(ex, "Query execution error for database type: {DatabaseType}", databaseType);
             throw new InvalidOperationException("Failed to execute query", ex);
         }
+    }
+
+    private IDatabaseExecutor GetExecutor(DatabaseType databaseType)
+    {
+        var executors = _serviceProvider.GetServices<IDatabaseExecutor>();
+        var executor = executors.FirstOrDefault(e => e.SupportedDatabaseType == databaseType);
+
+        if (executor == null)
+        {
+            throw new NotSupportedException($"Database type {databaseType} is not supported or the executor is not registered.");
+        }
+
+        return executor;
     }
 }
