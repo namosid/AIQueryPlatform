@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:80"
+      - "8443:443"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - OpenAI__Endpoint=${OPENAI_ENDPOINT}
+      - OpenAI__ApiKey=${OPENAI_API_KEY}
+      - OpenAI__DeploymentName=${OPENAI_DEPLOYMENT_NAME:-gpt-4}
+      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=AIQueryPlatform;User=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=true;
+    depends_on:
+      - sqlserver
+    networks:
+      - aiquery-network
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=YourStrong@Passw0rd
+      - MSSQL_PID=Developer
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    networks:
+      - aiquery-network
+
+volumes:
+  sqlserver-data:
+
+networks:
+  aiquery-network:
+    driver: bridge

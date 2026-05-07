@@ -1,0 +1,48 @@
+{
+  "name": "@aiquery/widget",
+  "version": "1.0.0",
+  "description": "Universal AI insights widget for any website",
+  "main": "dist/ai-widget.js",
+  "sideEffects": [
+    "src/loader.ts",
+    "src/**/*.css"
+  ],
+  "scripts": {
+    "dev": "webpack serve --mode development",
+    "build": "webpack --mode production",
+    "build:loader": "webpack --mode production --config webpack.loader.js",
+    "build:widget": "webpack --mode production --config webpack.widget.js",
+    "build:all": "npm run build:loader && npm run build:widget",
+    "test": "jest",
+    "lint": "eslint src --ext .ts,.tsx",
+    "type-check": "tsc --noEmit"
+  },
+  "keywords": [
+    "ai",
+    "widget",
+    "embeddable",
+    "analytics"
+  ],
+  "author": "AIQuery Platform",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "css-loader": "^6.8.1",
+    "eslint": "^8.45.0",
+    "eslint-plugin-react": "^7.33.0",
+    "html-webpack-plugin": "^5.5.3",
+    "style-loader": "^3.3.3",
+    "ts-loader": "^9.4.4",
+    "typescript": "^5.1.6",
+    "webpack": "^5.88.2",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^4.15.1"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  }
+}

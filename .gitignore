@@ -1,0 +1,66 @@
+## .NET
+bin/
+obj/
+*.user
+*.suo
+*.cache
+*.dll
+*.exe
+*.pdb
+*.log
+*.vspscc
+*.vssscc
+.vs/
+*.userprefs
+*.pidb
+*.dbmdl
+*.dbproj.schemaview
+*.jfm
+*.pfx
+*.publishsettings
+
+## Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+build/
+bld/
+[Bb]in/
+[Oo]bj/
+
+## Visual Studio cache/options
+.vscode/
+*.csproj.user
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+## Logs
+logs/
+*.log
+
+## Application settings (contains secrets)
+appsettings.Development.json
+appsettings.Production.json
+appsettings.*.json
+
+## Keep appsettings template
+!appsettings.json
+
+## NuGet
+*.nupkg
+**/packages/*
+!**/packages/build/
+
+## Node (for frontend)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+## OS
+.DS_Store
+Thumbs.db
