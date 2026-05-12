@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Widget Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .status {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="status">
+    <h1>AI Widget Test Page</h1>
+    <p id="status">Testing widget initialization...</p>
+  </div>
+
+  <script>
+    console.log('=== TEST PAGE LOADED ===');
+    console.log('About to load ai-widget.js...');
+    
+    // Test if we can reach the script
+    fetch('http://localhost:3001/ai-widget.js')
+      .then(response => {
+        console.log('ai-widget.js fetch response:', response.status, response.statusText);
+        if (response.ok) {
+          document.getElementById('status').innerHTML = '✅ ai-widget.js is accessible (status: ' + response.status + ')';
+        } else {
+          document.getElementById('status').innerHTML = '❌ ai-widget.js returned error: ' + response.status;
+        }
+      })
+      .catch(error => {
+        console.error('Failed to fetch ai-widget.js:', error);
+        document.getElementById('status').innerHTML = '❌ Failed to fetch ai-widget.js: ' + error.message;
+      });
+  </script>
+
+  <!-- The actual widget script -->
+  <script 
+    src="http://localhost:3001/ai-widget.js"
+    data-api-base-url="http://localhost:5000"
+    data-api-key="demo_key_123"
+    data-tenant-id="demo_tenant"
+    data-theme="light"
+    data-position="bottom-right"
+    data-auto-open="false"
+    onload="console.log('✅ ai-widget.js script tag onload fired')"
+    onerror="console.error('❌ ai-widget.js script tag onerror fired')">
+  </script>
+
+  <script>
+    setTimeout(() => {
+      console.log('=== 2 SECOND CHECK ===');
+      console.log('Window.__AIWidgetLoader:', window.__AIWidgetLoader);
+      console.log('Widget root element:', document.getElementById('ai-widget-root'));
+    }, 2000);
+  </script>
+</body>
+</html>

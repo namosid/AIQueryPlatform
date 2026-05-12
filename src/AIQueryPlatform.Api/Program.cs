@@ -109,8 +109,11 @@ builder.Services.AddScoped<ISqlValidatorService, SqlValidatorService>();
 builder.Services.AddScoped<IQueryExecutionService, QueryExecutionService>();
 builder.Services.AddScoped<ISchemaService, SchemaService>();
 builder.Services.AddScoped<IIntelligenceLayerService, IntelligenceLayerService>();
+builder.Services.AddScoped<IRecommendationService, RecommendationService>();
 builder.Services.AddScoped<IReportingService, ReportingService>();
 builder.Services.AddScoped<IQueryOrchestrationService, QueryOrchestrationService>();
+builder.Services.AddScoped<IConversationService, ConversationService>();
+builder.Services.AddScoped<ISavedAnalysisService, SavedAnalysisService>();
 
 var app = builder.Build();
 

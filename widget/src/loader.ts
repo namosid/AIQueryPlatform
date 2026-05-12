@@ -1,7 +1,12 @@
 /**
  * AI Query Widget Loader
- * Lightweight script that bootstraps the widget from script tag attributes
+ * Lightweight script that bootstraps the widget and modal from script tag attributes
  * Size target: < 5KB minified
+ * 
+ * Architecture:
+ * 1. Loader (this file) - reads config, creates containers
+ * 2. Widget bundle - loads immediately
+ * 3. Modal bundle - lazy loads on first "Explore" click
  */
 
 // Immediate execution check
@@ -24,13 +29,22 @@ interface WidgetConfig {
 
 class AIWidgetLoader {
   private config: WidgetConfig | null = null;
-  private shadowRoot: ShadowRoot | null = null;
+  private widgetShadowRoot: ShadowRoot | null = null;
+  private modalShadowRoot: ShadowRoot | null = null;
   private widgetContainer: HTMLElement | null = null;
+  private modalContainer: HTMLElement | null = null;
+  private modalLoaded = false;
 
   constructor() {
+    console.log('[AIWidget] Constructor called, document.readyState:', document.readyState);
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', () => this.init());
+      console.log('[AIWidget] Document still loading, waiting for DOMContentLoaded...');
+      document.addEventListener('DOMContentLoaded', () => {
+        console.log('[AIWidget] DOMContentLoaded fired');
+        this.init();
+      });
     } else {
+      console.log('[AIWidget] Document already loaded, initializing immediately');
       this.init();
     }
   }
@@ -43,22 +57,30 @@ class AIWidgetLoader {
       this.validateConfig();
       console.log('[AIWidget] Config validated');
       this.createContainer();
-      console.log('[AIWidget] Container created');
+      console.log('[AIWidget] Container created, widgetShadowRoot:', this.widgetShadowRoot);
+      console.log('[AIWidget] widgetContainer:', this.widgetContainer);
       this.loadWidget();
+      console.log('[AIWidget] loadWidget called');
     } catch (error) {
       console.error('[AIWidget] Initialization failed:', error);
+      console.error('[AIWidget] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     }
   }
 
   private readConfig(): WidgetConfig {
+    console.log('[AIWidget] Reading config from script tag...');
+    console.log('[AIWidget] document.currentScript:', document.currentScript);
+    
     const script = document.currentScript as HTMLScriptElement || 
                    document.querySelector('script[data-api-key]') as HTMLScriptElement;
 
+    console.log('[AIWidget] Found script element:', script);
+    
     if (!script) {
       throw new Error('Widget script not found');
     }
 
-    return {
+    const config = {
       apiBaseUrl: script.dataset.apiBaseUrl || '',
       apiKey: script.dataset.apiKey || '',
       tenantId: script.dataset.tenantId || '',
@@ -68,6 +90,9 @@ class AIWidgetLoader {
       expandUrl: script.dataset.expandUrl,
       autoOpen: script.dataset.autoOpen === 'true',
     };
+    
+    console.log('[AIWidget] Parsed config:', config);
+    return config;
   }
 
   private validateConfig(): void {
@@ -104,13 +129,36 @@ class AIWidgetLoader {
       document.body.appendChild(container);
     }
 
-    // Create Shadow DOM for isolation
-    this.shadowRoot = container.attachShadow({ mode: 'open' });
+    // Create Shadow DOM for widget
+    this.widgetShadowRoot = container.attachShadow({ mode: 'open' });
     
     // Create widget mount point inside shadow DOM
     this.widgetContainer = document.createElement('div');
     this.widgetContainer.id = 'widget-mount';
-    this.shadowRoot.appendChild(this.widgetContainer);
+    this.widgetShadowRoot.appendChild(this.widgetContainer);
+
+    // Create modal container with higher z-index than widget
+    const modalContainer = document.createElement('div');
+    modalContainer.id = 'ai-modal-root';
+    modalContainer.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 9999999;
+      pointer-events: none;
+      display: none;
+      visibility: hidden;
+    `;
+    this.modalContainer = modalContainer;
+    this.modalShadowRoot = modalContainer.attachShadow({ mode: 'open' });
+    
+    const modalMount = document.createElement('div');
+    modalMount.id = 'modal-mount';
+    this.modalShadowRoot.appendChild(modalMount);
+    
+    document.body.appendChild(modalContainer);
 
     // Store config in container for widget access
     (container as any).__widgetConfig = this.config;
@@ -135,33 +183,53 @@ class AIWidgetLoader {
   }
 
   private loadWidget(): void {
-    // Load vendors bundle first (React dependencies)
-    const vendorsScript = document.createElement('script');
     const basePath = this.getBasePath();
-    vendorsScript.src = `${basePath}vendors.js`;
-    vendorsScript.async = true;
-    vendorsScript.onload = () => {
-      console.log('[AIWidget] Vendors loaded successfully');
-      // Then load widget app bundle
-      const widgetScript = document.createElement('script');
-      widgetScript.src = `${basePath}widget-app.js`;
-      widgetScript.async = true;
-      widgetScript.onload = () => {
-        console.log('[AIWidget] Widget app loaded successfully');
-        this.mountWidget();
-      };
-      widgetScript.onerror = () => {
-        console.error('[AIWidget] Failed to load widget bundle');
+
+    // Load dependencies in order: runtime → vendors → widget-app
+    // Note: In dev mode, these are served from memory by webpack-dev-server
+    this.loadScript(`${basePath}runtime.js`)
+      .then(() => {
+        console.log('[AIWidget] Runtime loaded');
+        return this.loadScript(`${basePath}vendors.js`);
+      })
+      .then(() => {
+        console.log('[AIWidget] Vendors loaded');
+        return this.loadScript(`${basePath}widget-app.js`);
+      })
+      .then(() => {
+        console.log('[AIWidget] Widget app loaded, dispatching ready event');
+        // Emit ready event with both shadow roots
+        const event = new CustomEvent('aiWidgetReady', {
+          detail: {
+            widgetShadowRoot: this.widgetShadowRoot,
+            modalShadowRoot: this.modalShadowRoot,
+            config: this.config,
+          },
+        });
+        window.dispatchEvent(event);
+      })
+      .catch((error) => {
+        console.error('[AIWidget] Failed to load widget:', error);
         this.showErrorFallback();
-      };
-      document.head.appendChild(widgetScript);
-    };
-    vendorsScript.onerror = () => {
-      console.error('[AIWidget] Failed to load vendors bundle');
-      this.showErrorFallback();
-    };
-    
-    document.head.appendChild(vendorsScript);
+      });
+  }
+
+  private loadScript(src: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      // Check if script already loaded
+      const existing = document.querySelector(`script[src="${src}"]`);
+      if (existing) {
+        resolve();
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = src;
+      script.async = false; // Load in order
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error(`Failed to load ${src}`));
+      document.head.appendChild(script);
+    });
   }
 
   private getBasePath(): string {
@@ -171,19 +239,6 @@ class AIWidgetLoader {
 
   private getWidgetBundleUrl(): string {
     return `${this.getBasePath()}widget-app.js`;
-  }
-
-  private mountWidget(): void {
-    if (!this.shadowRoot || !this.config) return;
-
-    // Widget app will be loaded and will look for __widgetConfig
-    const event = new CustomEvent('aiWidgetReady', {
-      detail: {
-        shadowRoot: this.shadowRoot,
-        config: this.config,
-      },
-    });
-    window.dispatchEvent(event);
   }
 
   private showErrorFallback(): void {

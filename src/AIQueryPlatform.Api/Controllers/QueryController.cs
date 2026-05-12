@@ -55,6 +55,23 @@ public class QueryController : ControllerBase
             yield break;
         }
 
+        // Override tenant if provided in request payload
+        if (!string.IsNullOrWhiteSpace(request.TenantId))
+        {
+            _logger.LogInformation("Using tenant ID from request: {TenantId}", request.TenantId);
+        }
+
+        // Log additional context from request
+        if (!string.IsNullOrWhiteSpace(request.Context))
+        {
+            _logger.LogInformation("Request context: {Context}", request.Context);
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.UserRole))
+        {
+            _logger.LogInformation("User role: {UserRole}", request.UserRole);
+        }
+
         await foreach (var streamEvent in _orchestrationService.ExecuteQueryStreamAsync(request.Query))
         {
             yield return JsonSerializer.Serialize(streamEvent, JsonOptions);
@@ -72,6 +89,23 @@ public class QueryController : ControllerBase
         if (string.IsNullOrWhiteSpace(request.Query))
         {
             return BadRequest(new { error = "Query cannot be empty" });
+        }
+
+        // Override tenant if provided in request payload
+        if (!string.IsNullOrWhiteSpace(request.TenantId))
+        {
+            _logger.LogInformation("Using tenant ID from request: {TenantId}", request.TenantId);
+        }
+
+        // Log additional context from request
+        if (!string.IsNullOrWhiteSpace(request.Context))
+        {
+            _logger.LogInformation("Request context: {Context}", request.Context);
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.UserRole))
+        {
+            _logger.LogInformation("User role: {UserRole}", request.UserRole);
         }
 
         var response = await _orchestrationService.ExecuteQueryAsync(request.Query);
@@ -122,6 +156,42 @@ public class QueryController : ControllerBase
             reportTitle,
             tenant,
             chartData);
+
+        return File(pdfBytes, "application/pdf", $"{reportTitle.Replace(" ", "_")}.pdf");
+    }
+
+    /// <summary>
+    /// Generate PDF report from pre-executed query result
+    /// </summary>
+    [HttpPost("generate-report-from-data")]
+    [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GenerateReportFromDataAsync([FromBody] ReportFromDataRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Query))
+        {
+            return BadRequest(new { error = "Query cannot be empty" });
+        }
+
+        if (request.Result == null || request.Result.Rows == null || request.Result.Rows.Count == 0)
+        {
+            return BadRequest(new { error = "Result data cannot be empty" });
+        }
+
+        if (!_tenantContext.HasTenant)
+        {
+            return Unauthorized(new { error = "No tenant context" });
+        }
+
+        var tenant = _tenantContext.CurrentTenant!;
+
+        // Generate PDF using provided data
+        var reportTitle = request.ReportTitle ?? "Query Report";
+        var pdfBytes = await _reportingService.GeneratePdfReportAsync(
+            request.Result,
+            reportTitle,
+            tenant,
+            chartData: request.ChartData);
 
         return File(pdfBytes, "application/pdf", $"{reportTitle.Replace(" ", "_")}.pdf");
     }

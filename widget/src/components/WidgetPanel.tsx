@@ -1,8 +1,70 @@
 import React, { useState } from 'react';
-import type { WidgetConfig, WidgetState } from '../types';
+import type { WidgetConfig, WidgetState, ChartData } from '../types';
 import InsightCard from './InsightCard';
 import QueryBar from './QueryBar';
 import SuggestedQueries from './SuggestedQueries';
+import StateManager from '../state/StateManager';
+
+// Simple chart renderer for widget
+const SimpleChartRenderer: React.FC<{ data: ChartData }> = ({ data }) => {
+  console.log('[SimpleChartRenderer] ========== CHART RENDER ==========');
+  console.log('[SimpleChartRenderer] Full data:', JSON.stringify(data, null, 2));
+  console.log('[SimpleChartRenderer] Labels:', data?.labels);
+  console.log('[SimpleChartRenderer] Datasets:', data?.datasets);
+  console.log('[SimpleChartRenderer] ============================================');
+  
+  // Validate data
+  if (!data || !data.labels || !data.datasets || data.labels.length === 0 || data.datasets.length === 0) {
+    console.error('[SimpleChartRenderer] Invalid chart data:', data);
+    return (
+      <div className="widget-chart">
+        <div className="chart-error">Chart data is incomplete</div>
+      </div>
+    );
+  }
+  
+  // Validate dataset has data array
+  if (!data.datasets[0]?.data || data.datasets[0].data.length === 0) {
+    console.error('[SimpleChartRenderer] No data in dataset');
+    return (
+      <div className="widget-chart">
+        <div className="chart-error">No data points available</div>
+      </div>
+    );
+  }
+  
+  const maxValue = Math.max(...data.datasets.flatMap(ds => ds.data || []));
+  console.log('[SimpleChartRenderer] Max value:', maxValue);
+  
+  if (maxValue === 0 || !isFinite(maxValue)) {
+    console.warn('[SimpleChartRenderer] No valid numeric data');
+    return (
+      <div className="widget-chart">
+        <div className="chart-error">No numeric data to display</div>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="widget-chart">
+      <div className="chart-bars">
+        {data.labels.map((label, idx) => {
+          const value = data.datasets[0]?.data[idx] || 0;
+          const height = Math.max((value / maxValue) * 100, 5); // Minimum 5% height for visibility
+          console.log(`[SimpleChartRenderer] Bar ${idx}: label=${label}, value=${value}, height=${height}%`);
+          return (
+            <div key={idx} className="chart-bar-group">
+              <div className="chart-bar" style={{ height: `${height}%` }} title={`${label}: ${value}`}>
+                <span className="bar-value">{value}</span>
+              </div>
+              <span className="bar-label">{label}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
 
 interface WidgetPanelProps {
   config: WidgetConfig;
@@ -21,10 +83,12 @@ const WidgetPanel: React.FC<WidgetPanelProps> = ({
 }) => {
   const [queryResult, setQueryResult] = useState<any>(null);
   const [isQuerying, setIsQuerying] = useState(false);
+  const [lastQuery, setLastQuery] = useState<string>('');
 
   const handleQuery = async (query: string) => {
     setIsQuerying(true);
     setQueryResult(null);
+    setLastQuery(query);
 
     try {
       const result = await onQuery(query);
@@ -37,6 +101,30 @@ const WidgetPanel: React.FC<WidgetPanelProps> = ({
     } finally {
       setIsQuerying(false);
     }
+  };
+
+  const handleExploreDeeperClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    console.log('[WidgetPanel] ========== EXPLORE DEEPER CLICKED ==========');
+    console.log('[WidgetPanel] lastQuery:', lastQuery);
+    console.log('[WidgetPanel] queryResult:', queryResult);
+    console.log('[WidgetPanel] insights:', state.insights);
+    
+    // Build context object
+    const context = {
+      query: lastQuery || undefined,
+      insights: state.insights && state.insights.length > 0 ? state.insights : undefined,
+      queryResult: queryResult || undefined,
+    };
+    
+    console.log('[WidgetPanel] Opening modal with context:', context);
+    console.log('[WidgetPanel] Context.query:', context.query);
+    console.log('[WidgetPanel] Context.insights:', context.insights);
+    console.log('[WidgetPanel] Context.queryResult:', context.queryResult);
+    console.log('[WidgetPanel] =======================================');
+    
+    // Open modal with current context - ensure all required fields
+    StateManager.openModal(context);
   };
 
   const formatTimestamp = (timestamp: string | null) => {
@@ -179,16 +267,60 @@ const WidgetPanel: React.FC<WidgetPanelProps> = ({
               <div className="ai-widget-result-success">
                 <h4>Query Result:</h4>
                 
-                {/* Display chart info if available */}
-                {queryResult.data?.visualizationType === 'Chart' && (
-                  <div className="result-meta">
-                    <span className="result-badge">📊 {queryResult.data.chartData?.chartType || 'Chart'}</span>
-                    <span className="result-badge">⏱️ {queryResult.data.executionTimeMs}ms</span>
+                {/* Display chart if available and valid */}
+                {(() => {
+                  const shouldShowChart = queryResult.data?.visualizationType === 'Chart' && 
+                                         queryResult.data?.chartData && 
+                                         queryResult.data.chartData.labels && 
+                                         queryResult.data.chartData.labels.length > 0 &&
+                                         queryResult.data.chartData.datasets &&
+                                         queryResult.data.chartData.datasets.length > 0;
+                  
+                  console.log('[WidgetPanel] Chart check:', {
+                    visualizationType: queryResult.data?.visualizationType,
+                    hasChartData: !!queryResult.data?.chartData,
+                    hasLabels: !!queryResult.data?.chartData?.labels,
+                    labelsLength: queryResult.data?.chartData?.labels?.length,
+                    hasDatasets: !!queryResult.data?.chartData?.datasets,
+                    datasetsLength: queryResult.data?.chartData?.datasets?.length,
+                    shouldShowChart
+                  });
+                  
+                  return shouldShowChart ? (
+                    <div className="result-chart-section">
+                      <div className="result-meta">
+                        <span className="result-badge">📊 {queryResult.data.chartData.chartType || 'Chart'}</span>
+                        <span className="result-badge">⏱️ {queryResult.data.executionTimeMs}ms</span>
+                      </div>
+                      <SimpleChartRenderer data={queryResult.data.chartData} />
+                    </div>
+                  ) : null;
+                })()}
+
+                {/* Explore Deeper Button - positioned between chart and table */}
+                {queryResult.data?.result?.rows && queryResult.data.result.rows.length > 0 && (
+                  <div className="ai-widget-cta-inline">
+                    <button
+                      className="ai-widget-explore-btn"
+                      onClick={handleExploreDeeperClick}
+                      title="Open fullscreen AI workspace"
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path
+                          d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                      Explore Deeper
+                    </button>
                   </div>
                 )}
 
                 {/* Display table data if available */}
-                {queryResult.data?.result?.rows && queryResult.data.result.rows.length > 0 ? (
+                {queryResult.data?.result?.rows && queryResult.data.result.rows.length > 0 && (
                   <div className="result-table-container">
                     <div className="result-summary">
                       {queryResult.data.result.rowCount} row{queryResult.data.result.rowCount !== 1 ? 's' : ''} returned
@@ -217,13 +349,16 @@ const WidgetPanel: React.FC<WidgetPanelProps> = ({
                         </tbody>
                       </table>
                       {queryResult.data.result.rowCount > 5 && (
-                        <div className="result-more">
-                          + {queryResult.data.result.rowCount - 5} more row{queryResult.data.result.rowCount - 5 !== 1 ? 's' : ''}
-                        </div>
+                        <button className="result-more-link" onClick={handleExploreDeeperClick}>
+                          View all {queryResult.data.result.rowCount} rows →
+                        </button>
                       )}
                     </div>
                   </div>
-                ) : (
+                )}
+                
+                {/* Display JSON fallback if no structured data */}
+                {!queryResult.data?.result?.rows && !queryResult.data?.chartData && (
                   <div className="result-json">
                     <pre>{JSON.stringify(queryResult.data, null, 2)}</pre>
                   </div>
@@ -234,20 +369,6 @@ const WidgetPanel: React.FC<WidgetPanelProps> = ({
                 <p>Error: {queryResult.error}</p>
               </div>
             )}
-          </div>
-        )}
-
-        {/* Explore CTA */}
-        {config.expandUrl && (
-          <div className="ai-widget-cta">
-            <a
-              href={config.expandUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="ai-widget-cta-link"
-            >
-              Explore deeper insights →
-            </a>
           </div>
         )}
       </div>

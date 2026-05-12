@@ -6,6 +6,9 @@ namespace AIQueryPlatform.Api.Models.DTOs;
 public class QueryRequest
 {
     public string Query { get; set; } = string.Empty;
+    public string? Context { get; set; }
+    public string? TenantId { get; set; }
+    public string? UserRole { get; set; }
 }
 
 /// <summary>
@@ -83,5 +86,17 @@ public class ChartDataset
 public class ReportRequest
 {
     public string Query { get; set; } = string.Empty;
+    public string? ReportTitle { get; set; }
+}
+
+/// <summary>
+/// Report request DTO with pre-executed data
+/// </summary>
+public class ReportFromDataRequest
+{
+    public string Query { get; set; } = string.Empty;
+    public string GeneratedSql { get; set; } = string.Empty;
+    public QueryResult Result { get; set; } = new();
+    public ChartData? ChartData { get; set; }
     public string? ReportTitle { get; set; }
 }

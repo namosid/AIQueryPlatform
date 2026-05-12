@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Analytics Widget - Integration Example</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #333;
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 60px 40px;
+      text-align: center;
+    }
+
+    .header h1 {
+      font-size: 3rem;
+      margin-bottom: 16px;
+      font-weight: 700;
+    }
+
+    .header p {
+      font-size: 1.25rem;
+      opacity: 0.95;
+    }
+
+    .content {
+      padding: 60px 40px;
+    }
+
+    .section {
+      margin-bottom: 60px;
+    }
+
+    .section h2 {
+      font-size: 2rem;
+      margin-bottom: 24px;
+      color: #667eea;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .section h3 {
+      font-size: 1.5rem;
+      margin: 32px 0 16px;
+      color: #333;
+    }
+
+    .section p {
+      font-size: 1.125rem;
+      line-height: 1.8;
+      color: #666;
+      margin-bottom: 16px;
+    }
+
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+      margin-top: 32px;
+    }
+
+    .feature-card {
+      padding: 32px;
+      border: 2px solid #e5e7eb;
+      border-radius: 16px;
+      transition: all 0.3s;
+    }
+
+    .feature-card:hover {
+      border-color: #667eea;
+      box-shadow: 0 8px 24px rgba(102, 126, 234, 0.15);
+      transform: translateY(-4px);
+    }
+
+    .feature-card h4 {
+      font-size: 1.25rem;
+      margin-bottom: 12px;
+      color: #667eea;
+    }
+
+    .feature-card p {
+      font-size: 1rem;
+      color: #666;
+      line-height: 1.6;
+    }
+
+    .icon {
+      font-size: 2.5rem;
+      margin-bottom: 16px;
+      display: block;
+    }
+
+    .code-block {
+      background: #1e293b;
+      color: #e2e8f0;
+      padding: 24px;
+      border-radius: 12px;
+      overflow-x: auto;
+      margin: 24px 0;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.875rem;
+      line-height: 1.6;
+    }
+
+    .code-block code {
+      color: #e2e8f0;
+    }
+
+    .highlight {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 40px;
+      border-radius: 16px;
+      margin: 40px 0;
+    }
+
+    .highlight h3 {
+      color: white;
+      margin-bottom: 16px;
+    }
+
+    .highlight p {
+      color: rgba(255, 255, 255, 0.95);
+      font-size: 1.125rem;
+    }
+
+    .cta-button {
+      display: inline-block;
+      background: white;
+      color: #667eea;
+      padding: 16px 32px;
+      border-radius: 12px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 1.125rem;
+      margin-top: 24px;
+      transition: all 0.3s;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .cta-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    }
+
+    .steps {
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+      margin-top: 32px;
+    }
+
+    .step {
+      display: flex;
+      gap: 24px;
+      align-items: flex-start;
+    }
+
+    .step-number {
+      width: 48px;
+      height: 48px;
+      background: #667eea;
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1.25rem;
+      flex-shrink: 0;
+    }
+
+    .step-content h4 {
+      font-size: 1.25rem;
+      margin-bottom: 8px;
+      color: #333;
+    }
+
+    .step-content p {
+      color: #666;
+      margin: 0;
+    }
+
+    .footer {
+      background: #f9fafb;
+      padding: 40px;
+      text-align: center;
+      border-top: 1px solid #e5e7eb;
+    }
+
+    .footer p {
+      color: #666;
+      font-size: 0.875rem;
+    }
+
+    @media (max-width: 768px) {
+      .header h1 {
+        font-size: 2rem;
+      }
+
+      .header p {
+        font-size: 1rem;
+      }
+
+      .content {
+        padding: 40px 24px;
+      }
+
+      .features {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <h1>🚀 AI Analytics Widget</h1>
+      <p>Plug-and-play AI insights for any website</p>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+      <!-- Introduction -->
+      <div class="section">
+        <h2>✨ What is This?</h2>
+        <p>
+          This page demonstrates a <strong>fully functional AI analytics widget</strong> 
+          that can be integrated into any website with a single script tag.
+        </p>
+        <p>
+          Look for the <strong>floating AI button</strong> in the bottom-right corner. 
+          Click it to see insights, ask questions, and click <strong>"Explore Deeper"</strong> 
+          to open the fullscreen AI workspace.
+        </p>
+      </div>
+
+      <!-- Features -->
+      <div class="section">
+        <h2>🎯 Key Features</h2>
+        <div class="features">
+          <div class="feature-card">
+            <span class="icon">⚡</span>
+            <h4>Instant Integration</h4>
+            <p>One script tag. Zero configuration. Works immediately.</p>
+          </div>
+
+          <div class="feature-card">
+            <span class="icon">🔒</span>
+            <h4>Complete Isolation</h4>
+            <p>Shadow DOM prevents CSS/JS conflicts with your app.</p>
+          </div>
+
+          <div class="feature-card">
+            <span class="icon">📊</span>
+            <h4>Rich Visualizations</h4>
+            <p>Charts, tables, KPIs, and interactive insights.</p>
+          </div>
+
+          <div class="feature-card">
+            <span class="icon">💬</span>
+            <h4>Conversation History</h4>
+            <p>Full AI workspace with saved conversations and analyses.</p>
+          </div>
+
+          <div class="feature-card">
+            <span class="icon">🎨</span>
+            <h4>Framework Agnostic</h4>
+            <p>Works with React, Vue, Angular, or plain HTML.</p>
+          </div>
+
+          <div class="feature-card">
+            <span class="icon">📱</span>
+            <h4>Responsive Design</h4>
+            <p>Optimized for desktop, tablet, and mobile devices.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Integration -->
+      <div class="section">
+        <h2>🔧 How to Integrate</h2>
+        
+        <div class="steps">
+          <div class="step">
+            <div class="step-number">1</div>
+            <div class="step-content">
+              <h4>Add Script Tag</h4>
+              <p>Copy and paste this single line into your HTML:</p>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-number">2</div>
+            <div class="step-content">
+              <h4>Configure Credentials</h4>
+              <p>Update API URL, API key, and tenant ID in the script attributes.</p>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-number">3</div>
+            <div class="step-content">
+              <h4>Done!</h4>
+              <p>Widget appears automatically. No build process, no npm install.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="code-block"><code>&lt;script 
+  src="https://cdn.yourdomain.com/ai-widget.js"
+  data-api-base-url="https://api.yourdomain.com"
+  data-api-key="YOUR_API_KEY"
+  data-tenant-id="YOUR_TENANT_ID"
+  data-theme="light"
+  data-position="bottom-right"&gt;
+&lt;/script&gt;</code></div>
+      </div>
+
+      <!-- User Flow -->
+      <div class="section">
+        <h2>🎬 User Experience Flow</h2>
+        
+        <h3>1. Floating Widget</h3>
+        <p>
+          A subtle AI button appears on your website. Users can click it anytime to ask questions.
+        </p>
+
+        <h3>2. Quick Insights</h3>
+        <p>
+          The widget shows compact insights, suggested queries, and a query bar for quick questions.
+        </p>
+
+        <h3>3. Fullscreen Workspace</h3>
+        <p>
+          Click "Explore Deeper" to open a fullscreen AI analytics workspace with:
+        </p>
+        <ul style="margin-left: 40px; margin-top: 12px; line-height: 1.8; color: #666;">
+          <li>Left sidebar: Conversation history and saved analyses</li>
+          <li>Main area: Full conversation thread with rich visualizations</li>
+          <li>Right panel: AI-generated risks, opportunities, and recommendations</li>
+        </ul>
+      </div>
+
+      <!-- No Backend Changes -->
+      <div class="highlight">
+        <h3>✅ No Backend Changes Required</h3>
+        <p>
+          The widget integrates with your existing APIs. No need to modify your backend code.
+          It works with the API endpoints you already have.
+        </p>
+      </div>
+
+      <!-- Try It Now -->
+      <div class="section">
+        <h2>🎉 Try It Now</h2>
+        <p>
+          Look for the <strong>floating AI button</strong> in the bottom-right corner of this page.
+        </p>
+        <p>
+          Click it, ask a question, and click <strong>"Explore Deeper"</strong> to see the fullscreen workspace.
+        </p>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <p>© 2024 AI Query Platform. Built for enterprise SaaS applications.</p>
+    </div>
+  </div>
+
+  <!-- 
+    ==========================================
+    AI WIDGET INTEGRATION
+    ==========================================
+    This is the ONLY code needed to add the widget
+  -->
+  <script 
+    src="http://localhost:3001/ai-widget.js"
+    data-api-base-url="https://localhost:5001"
+    data-api-key="demo_api_key_12345"
+    data-tenant-id="11111111-1111-1111-1111-111111111111"
+    data-theme="light"
+    data-position="bottom-right"
+    data-auto-open="false">
+  </script>
+</body>
+</html>

@@ -11,10 +11,15 @@ const FloatingButton: React.FC<FloatingButtonProps> = ({
   theme,
   hasNotification = false,
 }) => {
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onClick();
+  };
+
   return (
     <button
       className={`ai-widget-fab theme-${theme}`}
-      onClick={onClick}
+      onClick={handleClick}
       aria-label="Open AI Insights"
       title="Open AI Insights"
     >

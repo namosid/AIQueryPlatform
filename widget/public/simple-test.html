@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simple Widget Test</title>
+</head>
+<body>
+  <h1>Simple Widget Test</h1>
+  <p>Check console for messages</p>
+
+  <script>
+    console.log('=== PAGE SCRIPT RUNNING ===');
+    console.log('Time:', new Date().toISOString());
+  </script>
+
+  <!-- Widget Script -->
+  <script 
+    src="http://localhost:3001/ai-widget.js?v=1"
+    data-api-base-url="http://localhost:5000"
+    data-api-key="demo_key_123"
+    data-tenant-id="demo_tenant"
+    data-theme="light"
+    data-position="bottom-right">
+  </script>
+
+  <script>
+    console.log('=== AFTER WIDGET SCRIPT TAG ===');
+    setTimeout(() => {
+      console.log('=== 1 SECOND CHECK ===');
+      console.log('Widget root:', document.getElementById('ai-widget-root'));
+      console.log('Widget loader:', window.__AIWidgetLoader);
+    }, 1000);
+  </script>
+</body>
+</html>
