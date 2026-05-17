@@ -23,6 +23,11 @@ public class QueryResponse
     public VisualizationType VisualizationType { get; set; }
     public ChartData? ChartData { get; set; }
     public long ExecutionTimeMs { get; set; }
+    
+    // Token usage tracking
+    public int? RequestTokens { get; set; }
+    public int? ResponseTokens { get; set; }
+    public int? TotalTokens { get; set; }
 }
 
 /// <summary>

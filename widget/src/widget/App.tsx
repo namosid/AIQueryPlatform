@@ -22,7 +22,7 @@ const App: React.FC<AppProps> = ({ config }) => {
   // Load insights on mount or when opened
   useEffect(() => {
     if (state.isOpen && state.insights.length === 0 && !state.isLoading) {
-      loadInsights();
+      //loadInsights();
     }
   }, [state.isOpen]);
 
@@ -52,7 +52,7 @@ const App: React.FC<AppProps> = ({ config }) => {
   };
 
   const handleRefresh = () => {
-    loadInsights();
+    //loadInsights();
   };
 
   const handleQuery = async (query: string): Promise<any> => {

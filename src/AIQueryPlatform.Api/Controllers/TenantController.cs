@@ -47,7 +47,8 @@ public class TenantController : ControllerBase
             tenant.Name,
             tenant.LogoUrl,
             tenant.ThemeColor,
-            tenant.IsActive
+            tenant.IsActive,
+            tenant.EnableInsights // Include insights setting for client
         });
     }
 
@@ -84,4 +85,44 @@ public class TenantController : ControllerBase
             timestamp = DateTime.UtcNow
         });
     }
+
+    /// <summary>
+    /// Update tenant insights setting (Admin only)
+    /// </summary>
+    [HttpPatch("insights")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> UpdateInsightsSetting([FromBody] UpdateInsightsRequest request)
+    {
+        if (!_tenantContext.HasTenant)
+        {
+            return Unauthorized(new { error = "No tenant context" });
+        }
+
+        try
+        {
+            await _tenantService.UpdateInsightsSettingAsync(_tenantContext.TenantId, request.EnableInsights);
+            
+            _logger.LogInformation("Updated insights setting for tenant {TenantId}: {Enabled}", 
+                _tenantContext.TenantId, request.EnableInsights);
+
+            return Ok(new
+            {
+                message = "Insights setting updated successfully",
+                enableInsights = request.EnableInsights,
+                note = request.EnableInsights 
+                    ? "AI recommendations will be generated (tokens consumed)" 
+                    : "AI recommendations disabled (tokens saved)"
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update insights setting for tenant {TenantId}", _tenantContext.TenantId);
+            return StatusCode(500, new { error = "Failed to update insights setting" });
+        }
+    }
 }
+
+public record UpdateInsightsRequest(bool EnableInsights);
+

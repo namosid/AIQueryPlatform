@@ -1,3 +1,5 @@
+using AIQueryPlatform.Api.Helpers;
+using AIQueryPlatform.Api.Models;
 using AIQueryPlatform.Api.Models.DTOs;
 using AIQueryPlatform.Api.Services.Interfaces;
 using Azure;
@@ -16,12 +18,18 @@ public class RecommendationService : IRecommendationService
     private readonly string _deploymentName;
     private readonly int _maxTokens;
     private readonly float _temperature;
+    private readonly ITokenUsageService _tokenUsageService;
+    private readonly TenantContext _tenantContext;
 
     public RecommendationService(
         IConfiguration configuration,
-        ILogger<RecommendationService> logger)
+        ILogger<RecommendationService> logger,
+        ITokenUsageService tokenUsageService,
+        TenantContext tenantContext)
     {
         _logger = logger;
+        _tokenUsageService = tokenUsageService;
+        _tenantContext = tenantContext;
         
         var endpoint = configuration["OpenAI:Endpoint"] ?? throw new ArgumentNullException("OpenAI:Endpoint");
         var apiKey = configuration["OpenAI:ApiKey"] ?? throw new ArgumentNullException("OpenAI:ApiKey");
@@ -72,6 +80,23 @@ public class RecommendationService : IRecommendationService
 
             var response = await _openAIClient.GetChatCompletionsAsync(chatCompletionsOptions);
             var jsonResponse = response.Value.Choices[0].Message.Content;
+
+            // Track token usage
+            if (_tenantContext.HasTenant && response.Value.HasTokenUsage())
+            {
+                var (promptTokens, completionTokens, totalTokens) = response.Value.ExtractTokenUsage();
+                await _tokenUsageService.RecordTokenUsageAsync(new RecordTokenUsageRequest
+                {
+                    TenantId = _tenantContext.CurrentTenant!.TenantId,
+                    RequestTokens = promptTokens,
+                    ResponseTokens = completionTokens,
+                    TotalTokens = totalTokens,
+                    ModelName = _deploymentName,
+                    Endpoint = "Recommendations",
+                    Query = query,
+                    Status = "Success"
+                });
+            }
 
             _logger.LogDebug("LLM Response: {Response}", jsonResponse);
 

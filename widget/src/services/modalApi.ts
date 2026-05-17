@@ -367,6 +367,45 @@ export class ModalAPIService extends APIService {
     }
   }
 
+  // ==================== TOKEN USAGE ====================
+
+  /**
+   * Get token usage for the current tenant
+   */
+  async getTokenUsage(): Promise<any> {
+    try {
+      const response = await fetch(
+        `${this.config.apiBaseUrl}/api/tokenusage`,
+        {
+          method: 'GET',
+          headers: this.getHeaders(),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const usage = await response.json();
+      return usage;
+    } catch (error) {
+      console.error('[ModalAPIService] Failed to get token usage:', error);
+      // Return default/mock data on error
+      return {
+        monthlyLimit: 100000,
+        usedTokens: 0,
+        remainingTokens: 100000,
+        usagePercentage: 0,
+        status: 'normal',
+        planName: 'Free',
+        totalRequests: 0,
+        daysUntilReset: 30,
+        estimatedDailyUsage: 0,
+        lastUpdated: new Date().toISOString(),
+      };
+    }
+  }
+
   // ==================== UTILITIES ====================
 
   private getHeaders(): Record<string, string> {

@@ -7,4 +7,5 @@ public interface ITenantService
     Task<Tenant?> GetTenantByIdAsync(Guid tenantId);
     Task<Tenant?> GetTenantByApiKeyAsync(string apiKey);
     Task<List<Tenant>> GetAllTenantsAsync();
+    Task UpdateInsightsSettingAsync(Guid tenantId, bool enableInsights);
 }

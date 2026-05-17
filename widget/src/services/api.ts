@@ -14,6 +14,36 @@ class APIService {
   }
 
   /**
+   * Get tenant information including feature flags
+   */
+  async getTenantInfo(): Promise<{ enableInsights: boolean; name: string; themeColor?: string }> {
+    try {
+      const response = await fetch(`${this.config.apiBaseUrl}/api/tenant/current`, {
+        method: 'GET',
+        headers: {
+          'x-api-key': this.config.apiKey,
+          'x-tenant-id': this.config.tenantId,
+        },
+      });
+
+      if (!response.ok) {
+        console.warn('[APIService] Failed to fetch tenant info, using defaults');
+        return { enableInsights: true, name: 'Unknown' };
+      }
+
+      const data = await response.json();
+      return {
+        enableInsights: data.enableInsights ?? true,
+        name: data.name,
+        themeColor: data.themeColor,
+      };
+    } catch (error) {
+      console.error('[APIService] Error fetching tenant info:', error);
+      return { enableInsights: true, name: 'Unknown' }; // Default to enabled on error
+    }
+  }
+
+  /**
    * Fetch AI-generated insights (auto-loaded on widget open)
    */
   async fetchInsights(): Promise<AIInsight[]> {

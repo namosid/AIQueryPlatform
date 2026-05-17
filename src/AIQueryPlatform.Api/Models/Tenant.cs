@@ -18,6 +18,9 @@ public class Tenant
     public string? LogoUrl { get; set; }
     public string? ThemeColor { get; set; }
     
+    // Feature flags
+    public bool EnableInsights { get; set; } = true; // Control AI recommendations/insights generation
+    
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }

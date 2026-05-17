@@ -115,6 +115,10 @@ builder.Services.AddScoped<IQueryOrchestrationService, QueryOrchestrationService
 builder.Services.AddScoped<IConversationService, ConversationService>();
 builder.Services.AddScoped<ISavedAnalysisService, SavedAnalysisService>();
 
+// Token usage and quota management
+builder.Services.AddScoped<ITokenUsageService, TokenUsageService>();
+builder.Services.AddScoped<IQuotaValidationService, QuotaValidationService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline
@@ -134,6 +138,7 @@ app.UseHttpsRedirection();
 // Add custom middleware
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseMiddleware<TenantResolutionMiddleware>();
+app.UseMiddleware<QuotaEnforcementMiddleware>();
 app.UseMiddleware<RateLimitingMiddleware>();
 
 app.UseAuthorization();

@@ -36,8 +36,35 @@ const ModalWorkspace: React.FC<ModalWorkspaceProps> = ({ config, context: initia
     error: null,
   });
 
+  // Token usage refresh trigger - increment to force refresh
+  const [tokenRefreshTrigger, setTokenRefreshTrigger] = useState(0);
+  
+  // Server-side insights setting - fetched from tenant configuration
+  const [insightsEnabled, setInsightsEnabled] = useState(true);
+
   const modalRef = useRef<HTMLDivElement>(null);
   const [apiService] = useState(() => new ModalAPIService(config));
+  
+  // Fetch tenant configuration on mount
+  useEffect(() => {
+    const fetchTenantConfig = async () => {
+      try {
+        const tenantInfo = await apiService.getTenantInfo();
+        setInsightsEnabled(tenantInfo.enableInsights);
+        console.log('[ModalWorkspace] Tenant insights setting:', tenantInfo.enableInsights);
+        
+        // If insights disabled, collapse panel immediately
+        if (!tenantInfo.enableInsights) {
+          setState(prev => ({ ...prev, rightPanelCollapsed: true }));
+        }
+      } catch (error) {
+        console.error('[ModalWorkspace] Failed to fetch tenant config:', error);
+        // Default to enabled on error
+      }
+    };
+    
+    fetchTenantConfig();
+  }, [apiService]);
   
   // Log when component mounts
   useEffect(() => {
@@ -140,6 +167,9 @@ const ModalWorkspace: React.FC<ModalWorkspaceProps> = ({ config, context: initia
         console.log('[ModalWorkspace] Using conversation:', newConversation.id);
         await sendMessage(context.query, newConversation);
         console.log('[ModalWorkspace] Query sent successfully');
+        
+        // Refresh token usage after query completes
+        setTokenRefreshTrigger(prev => prev + 1);
       } else if (context.queryResult?.data?.result) {
         // If we have query result from widget, display it
         console.log('[ModalWorkspace] Displaying widget query result');
@@ -192,6 +222,20 @@ const ModalWorkspace: React.FC<ModalWorkspaceProps> = ({ config, context: initia
       ...prev,
       rightPanelCollapsed: !prev.rightPanelCollapsed,
     }));
+  };
+
+  // Wrapper for sendMessage that refreshes token usage after completion
+  const handleSendMessageWithRefresh = async (query: string) => {
+    try {
+      await sendMessage(query);
+      // Refresh token usage after query completes
+      console.log('[ModalWorkspace] Query completed, refreshing token usage');
+      setTokenRefreshTrigger(prev => prev + 1);
+    } catch (error) {
+      console.error('[ModalWorkspace] Error sending message:', error);
+      // Don't refresh on error
+      throw error;
+    }
   };
 
   const handleBackdropClick = (e: React.MouseEvent) => {
@@ -297,6 +341,7 @@ const ModalWorkspace: React.FC<ModalWorkspaceProps> = ({ config, context: initia
               onConversationSelect={handleConversationSelect}
               onNewConversation={handleNewConversation}
               onToggle={handleToggleSidebar}
+              refreshTrigger={tokenRefreshTrigger}
             />
           )}
 
@@ -306,14 +351,14 @@ const ModalWorkspace: React.FC<ModalWorkspaceProps> = ({ config, context: initia
             messages={messages}
             isLoading={isConversationLoading}
             error={conversationError}
-            onSendMessage={sendMessage}
+            onSendMessage={handleSendMessageWithRefresh}
             sidebarCollapsed={state.sidebarCollapsed}
             onToggleSidebar={handleToggleSidebar}
             apiService={apiService}
           />
 
-          {/* Right Panel */}
-          {!state.rightPanelCollapsed && conversation && (
+          {/* Right Panel - Only show if insights are enabled in tenant settings */}
+          {insightsEnabled && !state.rightPanelCollapsed && conversation && (
             <RightPanel
               conversation={conversation}
               messages={messages}

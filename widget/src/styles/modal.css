@@ -386,6 +386,13 @@ textarea {
   color: var(--text-muted, #9ca3af);
 }
 
+/* Sidebar Footer */
+.sidebar-footer {
+  padding: 12px;
+  border-top: 1px solid var(--border-color, #e5e7eb);
+  background: var(--bg-primary, #ffffff);
+}
+
 /* ==================== MAIN WORKSPACE ==================== */
 
 .workspace-header {

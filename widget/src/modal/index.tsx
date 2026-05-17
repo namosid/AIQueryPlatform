@@ -11,6 +11,8 @@ import type { ModalContext } from '../types/modal';
 import StateManager from '../state/StateManager';
 // @ts-ignore - raw-loader import for CSS as string
 import modalStyles from '!!raw-loader!../styles/modal.css';
+// @ts-ignore - raw-loader import for CSS as string
+import tokenUsageStyles from '!!raw-loader!../styles/tokenUsage.css';
 
 /**
  * Inject CSS into Shadow DOM
@@ -44,6 +46,24 @@ function injectStyles(shadowRoot: ShadowRoot): void {
   styleElement.textContent = styles;
   shadowRoot.appendChild(styleElement);
   console.log('[ModalWorkspace] Styles injected successfully');
+  
+  // Inject token usage styles
+  const tokenStyleElement = document.createElement('style');
+  let tokenStyles: string;
+  if (typeof tokenUsageStyles === 'string') {
+    tokenStyles = tokenUsageStyles;
+  } else if (tokenUsageStyles && typeof tokenUsageStyles === 'object' && 'default' in tokenUsageStyles) {
+    tokenStyles = (tokenUsageStyles as any).default;
+  } else {
+    console.error('[ModalWorkspace] Invalid token usage styles format!');
+    return;
+  }
+  
+  if (tokenStyles && tokenStyles.length > 0) {
+    tokenStyleElement.textContent = tokenStyles;
+    shadowRoot.appendChild(tokenStyleElement);
+    console.log('[ModalWorkspace] Token usage styles injected successfully');
+  }
 }
 
 /**

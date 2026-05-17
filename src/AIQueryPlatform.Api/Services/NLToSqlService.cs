@@ -1,3 +1,4 @@
+using AIQueryPlatform.Api.Helpers;
 using AIQueryPlatform.Api.Models;
 using AIQueryPlatform.Api.Models.DTOs;
 using AIQueryPlatform.Api.Services.Interfaces;
@@ -19,14 +20,20 @@ public class NLToSqlService : INLToSqlService
     private readonly int _maxTokens;
     private readonly float _temperature;
     private readonly DatabasePromptBuilderFactory _promptBuilderFactory;
+    private readonly ITokenUsageService _tokenUsageService;
+    private readonly TenantContext _tenantContext;
 
     public NLToSqlService(
         IConfiguration configuration,
         ILogger<NLToSqlService> logger,
-        DatabasePromptBuilderFactory promptBuilderFactory)
+        DatabasePromptBuilderFactory promptBuilderFactory,
+        ITokenUsageService tokenUsageService,
+        TenantContext tenantContext)
     {
         _logger = logger;
         _promptBuilderFactory = promptBuilderFactory;
+        _tokenUsageService = tokenUsageService;
+        _tenantContext = tenantContext;
         
         var endpoint = configuration["OpenAI:Endpoint"] ?? throw new ArgumentNullException("OpenAI:Endpoint");
         var apiKey = configuration["OpenAI:ApiKey"] ?? throw new ArgumentNullException("OpenAI:ApiKey");
@@ -62,6 +69,23 @@ public class NLToSqlService : INLToSqlService
 
             var response = await _openAIClient.GetChatCompletionsAsync(chatCompletionsOptions);
             var sqlQuery = response.Value.Choices[0].Message.Content;
+
+            // Track token usage
+            if (_tenantContext.HasTenant && response.Value.HasTokenUsage())
+            {
+                var (promptTokens, completionTokens, totalTokens) = response.Value.ExtractTokenUsage();
+                await _tokenUsageService.RecordTokenUsageAsync(new RecordTokenUsageRequest
+                {
+                    TenantId = _tenantContext.CurrentTenant!.TenantId,
+                    RequestTokens = promptTokens,
+                    ResponseTokens = completionTokens,
+                    TotalTokens = totalTokens,
+                    ModelName = _deploymentName,
+                    Endpoint = "NL-to-SQL",
+                    Query = query,
+                    Status = "Success"
+                });
+            }
 
             // Clean up the response using database-specific cleaner
             sqlQuery = promptBuilder.CleanSqlResponse(sqlQuery);

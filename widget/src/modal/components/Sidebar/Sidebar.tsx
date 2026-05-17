@@ -6,6 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import type { ModalAPIService } from '../../../services/modalApi';
 import type { Conversation, SavedAnalysis } from '../../../types/modal';
+import TokenUsageCard from '../TokenUsage/TokenUsageCard';
 
 interface SidebarProps {
   apiService: ModalAPIService;
@@ -13,6 +14,7 @@ interface SidebarProps {
   onConversationSelect: (id: string) => void;
   onNewConversation: () => void;
   onToggle: () => void;
+  refreshTrigger?: number;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -21,6 +23,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   onConversationSelect,
   onNewConversation,
   onToggle,
+  refreshTrigger,
 }) => {
   const [activeTab, setActiveTab] = useState<'conversations' | 'saved'>('conversations');
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -251,6 +254,15 @@ const Sidebar: React.FC<SidebarProps> = ({
             )}
           </div>
         )}
+      </div>
+
+      {/* Token Usage */}
+      <div className="sidebar-footer">
+        <TokenUsageCard 
+          apiService={apiService} 
+          compact={true} 
+          refreshTrigger={refreshTrigger}
+        />
       </div>
     </div>
   );

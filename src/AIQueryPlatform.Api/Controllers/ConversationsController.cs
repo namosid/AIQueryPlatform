@@ -310,25 +310,34 @@ public class ConversationsController : ControllerBase
 
             _logger.LogInformation("Query executed successfully. Rows returned: {RowCount}", queryResponse.Result?.RowCount ?? 0);
 
-            // Step 3: Generate AI recommendations asynchronously (don't fail if this fails)
+            // Step 3: Generate AI recommendations asynchronously (only if enabled for tenant)
             List<RecommendationDto>? recommendations = null;
-            try
+            
+            // Check if insights/recommendations are enabled for this tenant
+            if (_tenantContext.CurrentTenant!.EnableInsights)
             {
-                if (queryResponse.Result != null && queryResponse.Result.RowCount > 0)
+                try
                 {
-                    _logger.LogInformation("Generating AI recommendations for query results");
-                    recommendations = await _recommendationService.GenerateRecommendationsAsync(
-                        request.Query,
-                        queryResponse.Result,
-                        schemaContext: null // TODO: Add schema context if available
-                    );
-                    _logger.LogInformation("Generated {Count} recommendations", recommendations?.Count ?? 0);
+                    if (queryResponse.Result != null && queryResponse.Result.RowCount > 0)
+                    {
+                        _logger.LogInformation("Generating AI recommendations for query results (insights enabled for tenant)");
+                        recommendations = await _recommendationService.GenerateRecommendationsAsync(
+                            request.Query,
+                            queryResponse.Result,
+                            schemaContext: null // TODO: Add schema context if available
+                        );
+                        _logger.LogInformation("Generated {Count} recommendations", recommendations?.Count ?? 0);
+                    }
+                }
+                catch (Exception recEx)
+                {
+                    _logger.LogWarning(recEx, "Failed to generate recommendations, continuing without them");
+                    // Don't fail the entire request if recommendations fail
                 }
             }
-            catch (Exception recEx)
+            else
             {
-                _logger.LogWarning(recEx, "Failed to generate recommendations, continuing without them");
-                // Don't fail the entire request if recommendations fail
+                _logger.LogInformation("Skipping recommendations generation - insights disabled for tenant {TenantId}", tenantId);
             }
 
             // Step 4: Generate AI response text

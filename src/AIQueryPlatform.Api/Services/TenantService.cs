@@ -42,7 +42,7 @@ public class TenantService : ITenantService
             await connection.OpenAsync();
 
             var query = @"
-                SELECT TenantId, Name, ApiKey, ConnectionString, LogoUrl, ThemeColor, IsActive
+                SELECT TenantId, Name, ApiKey, ConnectionString, LogoUrl, ThemeColor, IsActive, EnableInsights
                 FROM Tenants
                 WHERE TenantId = @TenantId";
 
@@ -61,7 +61,8 @@ public class TenantService : ITenantService
                     ConnectionString = reader.GetString(3),
                     LogoUrl = reader.IsDBNull(4) ? null : reader.GetString(4),
                     ThemeColor = reader.IsDBNull(5) ? null : reader.GetString(5),
-                    IsActive = reader.GetBoolean(6)
+                    IsActive = reader.GetBoolean(6),
+                    EnableInsights = reader.GetBoolean(7)
                 };
 
                 _cache.Set(cacheKey, tenant, CacheDuration);
@@ -97,7 +98,7 @@ public class TenantService : ITenantService
             await connection.OpenAsync();
 
             var query = @"
-                SELECT TenantId, Name, ApiKey, ConnectionString, LogoUrl, ThemeColor, IsActive
+                SELECT TenantId, Name, ApiKey, ConnectionString, LogoUrl, ThemeColor, IsActive, EnableInsights
                 FROM Tenants
                 WHERE ApiKey = @ApiKey";
 
@@ -116,7 +117,8 @@ public class TenantService : ITenantService
                     ConnectionString = reader.GetString(3),
                     LogoUrl = reader.IsDBNull(4) ? null : reader.GetString(4),
                     ThemeColor = reader.IsDBNull(5) ? null : reader.GetString(5),
-                    IsActive = reader.GetBoolean(6)
+                    IsActive = reader.GetBoolean(6),
+                    EnableInsights = reader.GetBoolean(7)
                 };
 
                 _cache.Set(cacheKey, tenant, CacheDuration);
@@ -155,7 +157,7 @@ public class TenantService : ITenantService
             await connection.OpenAsync();
 
             var query = @"
-                SELECT TenantId, Name, ApiKey, ConnectionString, LogoUrl, ThemeColor, IsActive
+                SELECT TenantId, Name, ApiKey, ConnectionString, LogoUrl, ThemeColor, IsActive, EnableInsights
                 FROM Tenants
                 WHERE IsActive = 1
                 ORDER BY Name";
@@ -175,7 +177,8 @@ public class TenantService : ITenantService
                     ConnectionString = reader.GetString(3),
                     LogoUrl = reader.IsDBNull(4) ? null : reader.GetString(4),
                     ThemeColor = reader.IsDBNull(5) ? null : reader.GetString(5),
-                    IsActive = reader.GetBoolean(6)
+                    IsActive = reader.GetBoolean(6),
+                    EnableInsights = reader.GetBoolean(7)
                 };
 
                 tenants.Add(tenant);
@@ -189,6 +192,49 @@ public class TenantService : ITenantService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error loading all tenants from database");
+            throw;
+        }
+    }
+
+    public async Task UpdateInsightsSettingAsync(Guid tenantId, bool enableInsights)
+    {
+        try
+        {
+            var connectionString = _configuration.GetConnectionString("DefaultConnection");
+            
+            using var connection = new SqlConnection(connectionString);
+            await connection.OpenAsync();
+
+            var query = @"
+                UPDATE Tenants
+                SET EnableInsights = @EnableInsights,
+                    UpdatedAt = GETUTCDATE()
+                WHERE TenantId = @TenantId";
+
+            using var command = new SqlCommand(query, connection);
+            command.Parameters.AddWithValue("@TenantId", tenantId);
+            command.Parameters.AddWithValue("@EnableInsights", enableInsights);
+
+            var rowsAffected = await command.ExecuteNonQueryAsync();
+
+            if (rowsAffected > 0)
+            {
+                // Invalidate cache
+                _cache.Remove($"tenant_id_{tenantId}");
+                _cache.Remove("all_active_tenants");
+                
+                _logger.LogInformation("Updated insights setting for tenant {TenantId}: {Enabled}", 
+                    tenantId, enableInsights);
+            }
+            else
+            {
+                _logger.LogWarning("No tenant found with ID {TenantId} to update insights setting", tenantId);
+                throw new InvalidOperationException("Tenant not found");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating insights setting for tenant {TenantId}", tenantId);
             throw;
         }
     }
