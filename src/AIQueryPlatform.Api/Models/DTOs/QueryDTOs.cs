@@ -61,7 +61,8 @@ public enum VisualizationType
 {
     Table,
     Chart,
-    PDF
+    PDF,
+    TEXT
 }
 
 /// <summary>

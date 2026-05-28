@@ -1,15 +1,30 @@
-using Serilog;
 using AIQueryPlatform.Api.Middleware;
 using AIQueryPlatform.Api.Models;
 using AIQueryPlatform.Api.Services;
+using AIQueryPlatform.Api.Services.Executors;
 using AIQueryPlatform.Api.Services.Interfaces;
 using AIQueryPlatform.Api.Services.PromptBuilders;
-using AIQueryPlatform.Api.Services.Executors;
+using AIQueryPlatform.LLMServiceOperator;
+using AIQueryPlatform.LLMServiceOperator.Interface;
+using AIQueryPlatform.LLMServiceOperator.Models;
+using AIQueryPlatform.LLMServiceOperator.Services;
+using Microsoft.AspNetCore.DataProtection.KeyManagement;
+using Microsoft.Extensions.Options;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add appsettings.Local.json support for local secrets
 builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
+
+builder.Services.Configure<OpenAISettings>(
+    builder.Configuration.GetSection("OpenAI"));
+
+builder.Services.Configure<TextModelAISettings>(
+    builder.Configuration.GetSection("TextModelAI"));
+
+builder.Services.Configure<QdrantSettings>(
+    builder.Configuration.GetSection("QdrantData"));
 
 // Configure Serilog
 Log.Logger = new LoggerConfiguration()
@@ -114,6 +129,14 @@ builder.Services.AddScoped<IReportingService, ReportingService>();
 builder.Services.AddScoped<IQueryOrchestrationService, QueryOrchestrationService>();
 builder.Services.AddScoped<IConversationService, ConversationService>();
 builder.Services.AddScoped<ISavedAnalysisService, SavedAnalysisService>();
+builder.Services.Configure<LlmOptions>(builder.Configuration.GetSection("OpenAI"));
+builder.Services.AddHttpClient<ILlmService, LlmService>(
+    (sp, client) =>
+    {
+        var opts = sp.GetRequiredService<IOptions<LlmOptions>>().Value;
+        client.BaseAddress = new Uri(opts.Endpoint);
+    });
+builder.Services.AddScoped<ILLMServicePipe, LLMServicePipe>();
 
 // Token usage and quota management
 builder.Services.AddScoped<ITokenUsageService, TokenUsageService>();

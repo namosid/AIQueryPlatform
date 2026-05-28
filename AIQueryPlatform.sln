@@ -4,6 +4,10 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AIQueryPlatform.Api", "src\AIQueryPlatform.Api\AIQueryPlatform.Api.csproj", "{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AIQueryPlatform.LLMServiceOperator", "src\AIQueryPlatform.LLMService\AIQueryPlatform.LLMServiceOperator.csproj", "{21E990E4-265C-484D-BADD-1282142EA314}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AIQueryPlatform.SqlValidator", "src\AIQueryPlatform.SqlValidator\AIQueryPlatform.SqlValidator.csproj", "{88F175D3-E59A-4E37-8287-DF0571C6297D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -14,5 +18,19 @@ Global
 		{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}.Release|Any CPU.Build.0 = Release|Any CPU
+		{21E990E4-265C-484D-BADD-1282142EA314}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{21E990E4-265C-484D-BADD-1282142EA314}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{21E990E4-265C-484D-BADD-1282142EA314}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{21E990E4-265C-484D-BADD-1282142EA314}.Release|Any CPU.Build.0 = Release|Any CPU
+		{88F175D3-E59A-4E37-8287-DF0571C6297D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{88F175D3-E59A-4E37-8287-DF0571C6297D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{88F175D3-E59A-4E37-8287-DF0571C6297D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{88F175D3-E59A-4E37-8287-DF0571C6297D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C301DB6F-A463-4C9E-9AFB-0BF661E293B2}
 	EndGlobalSection
 EndGlobal

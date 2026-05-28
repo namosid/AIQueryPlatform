@@ -1,0 +1,694 @@
+Table: StudentParents
+  - ParentID (int) NOT NULL
+  - StudentID (int) NOT NULL
+  - Relation (varchar) NOT NULL
+  - Name (nvarchar) NOT NULL
+  - Occupation (nvarchar) NULL
+  - Education (nvarchar) NULL
+  - Income (decimal) NULL
+  - Phone (varchar) NULL
+  - Email (varchar) NULL
+  - AadharNumber (varchar) NULL
+  - IsPrimary (bit) NOT NULL
+  PK: ParentID
+  FK: StudentID → Students.StudentID
+
+Table: RouteStops
+  - StopID (int) NOT NULL
+  - RouteID (int) NOT NULL
+  - StopName (nvarchar) NOT NULL
+  - StopOrder (int) NOT NULL
+  - MorningTime (time) NULL
+  - EveningTime (time) NULL
+  - Latitude (decimal) NULL
+  - Longitude (decimal) NULL
+  PK: StopID
+  FK: RouteID → Routes.RouteID
+
+Table: StudentTransport
+  - StudentTransportID (int) NOT NULL
+  - StudentID (int) NOT NULL
+  - RouteID (int) NOT NULL
+  - StopID (int) NOT NULL
+  - AcademicYearID (int) NOT NULL
+  - PickupType (varchar) NOT NULL
+  - IsActive (bit) NOT NULL
+  PK: StudentTransportID
+  FK: StopID → RouteStops.StopID
+  FK: AcademicYearID → AcademicYears.AcademicYearID
+  FK: StudentID → Students.StudentID
+  FK: RouteID → Routes.RouteID
+
+Table: StudentEnrollments
+  - EnrollmentID (int) NOT NULL
+  - StudentID (int) NOT NULL
+  - SectionID (int) NOT NULL
+  - AcademicYearID (int) NOT NULL
+  - EnrollmentDate (date) NOT NULL
+  - Status (varchar) NOT NULL
+  - TCDate (date) NULL
+  - TCNumber (varchar) NULL
+  PK: EnrollmentID
+  FK: AcademicYearID → AcademicYears.AcademicYearID
+  FK: SectionID → Sections.SectionID
+  FK: StudentID → Students.StudentID
+
+Table: Subjects
+  - SubjectID (int) NOT NULL
+  - SchoolID (int) NOT NULL
+  - SubjectName (nvarchar) NOT NULL
+  - SubjectCode (varchar) NOT NULL
+  - SubjectType (varchar) NULL
+  - DepartmentID (int) NULL
+  - IsActive (bit) NOT NULL
+  PK: SubjectID
+  FK: SchoolID → Schools.SchoolID
+  FK: DepartmentID → Departments.DepartmentID
+
+Table: Hostels
+  - HostelID (int) NOT NULL
+  - SchoolID (int) NOT NULL
+  - HostelName (nvarchar) NOT NULL
+  - HostelType (varchar) NOT NULL
+  - WardenID (int) NULL
+  - Capacity (int) NULL
+  - Address (nvarchar) NULL
+  - IsActive (bit) NOT NULL
+  PK: HostelID
+  FK: SchoolID → Schools.SchoolID
+  FK: WardenID → Staff.StaffID
+
+Table: ClassSubjects
+  - ClassSubjectID (int) NOT NULL
+  - SectionID (int) NOT NULL
+  - SubjectID (int) NOT NULL
+  - StaffID (int) NULL
+  - WeeklyPeriods (int) NULL
+  - AcademicYearID (int) NOT NULL
+  PK: ClassSubjectID
+  FK: SubjectID → Subjects.SubjectID
+  FK: AcademicYearID → AcademicYears.AcademicYearID
+  FK: StaffID → Staff.StaffID
+  FK: SectionID → Sections.SectionID
+
+Table: HostelRooms
+  - RoomID (int) NOT NULL
+  - HostelID (int) NOT NULL
+  - RoomNumber (varchar) NOT NULL
+  - RoomType (varchar) NULL
+  - Capacity (int) NOT NULL
+  - Floor (int) NULL
+  - IsAvailable (bit) NOT NULL
+  PK: RoomID
+  FK: HostelID → Hostels.HostelID
+
+Table: HostelAllocations
+  - AllocationID (int) NOT NULL
+  - RoomID (int) NOT NULL
+  - StudentID (int) NOT NULL
+  - AcademicYearID (int) NOT NULL
+  - AllocationDate (date) NOT NULL
+  - VacatingDate (date) NULL
+  - IsActive (bit) NOT NULL
+  PK: AllocationID
+  FK: RoomID → HostelRooms.RoomID
+  FK: AcademicYearID → AcademicYears.AcademicYearID
+  FK: StudentID → Students.StudentID
+
+Table: Timetable
+  - TimetableID (int) NOT NULL
+  - SectionID (int) NOT NULL
+  - DayOfWeek (int) NOT NULL
+  - PeriodNumber (int) NOT NULL
+  - StartTime (time) NOT NULL
+  - EndTime (time) NOT NULL
+  - SubjectID (int) NULL
+  - StaffID (int) NULL
+  - RoomNumber (varchar) NULL
+  - AcademicYearID (int) NOT NULL
+  PK: TimetableID
+  FK: SubjectID → Subjects.SubjectID
+  FK: AcademicYearID → AcademicYears.AcademicYearID
+  FK: StaffID → Staff.StaffID
+  FK: SectionID → Sections.SectionID
+
+Table: Announcements
+  - AnnouncementID (int) NOT NULL
+  - SchoolID (int) NOT NULL
+  - Title (nvarchar) NOT NULL
+  - Content (nvarchar) NULL
+  - AudienceType (varchar) NOT NULL
+  - Priority (varchar) NOT NULL
+  - PublishDate (datetime) NOT NULL
+  - ExpiryDate (datetime) NULL
+  - CreatedBy (int) NULL
+  - AttachmentPath (nvarchar) NULL
+  PK: AnnouncementID
+  FK: SchoolID → Schools.SchoolID
+  FK: CreatedBy → Staff.StaffID
+
+Table: StudentAttendance
+  - AttendanceID (int) NOT NULL
+  - StudentID (int) NOT NULL
+  - SectionID (int) NOT NULL
+  - AttendanceDate (date) NOT NULL
+  - PeriodNumber (int) NOT NULL
+  - Status (varchar) NOT NULL
+  - MarkedBy (int) NULL
+  - Remarks (nvarchar) NULL
+  PK: AttendanceID
+  FK: MarkedBy → Staff.StaffID
+  FK: SectionID → Sections.SectionID
+  FK: StudentID → Students.StudentID
+
+Table: Messages
+  - MessageID (int) NOT NULL
+  - SchoolID (int) NOT NULL
+  - SenderType (varchar) NOT NULL
+  - SenderID (int) NOT NULL
+  - ReceiverType (varchar) NOT NULL
+  - ReceiverID (int) NOT NULL
+  - Subject (nvarchar) NULL
+  - Body (nvarchar) NOT NULL
+  - SentAt (datetime) NOT NULL
+  - IsRead (bit) NOT NULL
+  - ReadAt (datetime) NULL
+  PK: MessageID
+  FK: SchoolID → Schools.SchoolID
+
+Table: HomeworkAssignments
+  - HomeworkID (int) NOT NULL
+  - SectionID (int) NOT NULL
+  - SubjectID (int) NOT NULL
+  - StaffID (int) NOT NULL
+  - Title (nvarchar) NOT NULL
+  - Description (nvarchar) NULL
+  - AssignedDate (date) NOT NULL
+  - SubmissionDate (date) NOT NULL
+  - MaxMarks (int) NULL
+  - AttachmentPath (nvarchar) NULL
+  PK: HomeworkID
+  FK: SubjectID → Subjects.SubjectID
+  FK: StaffID → Staff.StaffID
+  FK: SectionID → Sections.SectionID
+
+Table: Notifications
+  - NotificationID (int) NOT NULL
+  - SchoolID (int) NOT NULL
+  - RecipientType (varchar) NOT NULL
+  - RecipientID (int) NOT NULL
+  - Channel (varchar) NOT NULL
+  - Message (nvarchar) NOT NULL
+  - SentAt (datetime) NOT NULL
+  - Status (varchar) NOT NULL
+  - TemplateID (int) NULL
+  - RelatedModule (varchar) NULL
+  PK: NotificationID
+  FK: SchoolID → Schools.SchoolID
+
+Table: HomeworkSubmissions
+  - SubmissionID (int) NOT NULL
+  - HomeworkID (int) NOT NULL
+  - StudentID (int) NOT NULL
+  - SubmittedAt (datetime) NOT NULL
+  - FilePath (nvarchar) NULL
+  - MarksObtained (decimal) NULL
+  - Remarks (nvarchar) NULL
+  - GradedBy (int) NULL
+  PK: SubmissionID
+  FK: HomeworkID → HomeworkAssignments.HomeworkID
+  FK: GradedBy → Staff.StaffID
+  FK: StudentID → Students.StudentID
+
+Table: Events
+  - EventID (int) NOT NULL
+  - SchoolID (int) NOT NULL
+  - EventName (nvarchar) NOT NULL
+  - Description (nvarchar) NULL
+  - EventDate (date) NOT NULL
+  - StartTime (time) NULL
+  - EndTime (time) NULL
+  - Venue (nvarchar) NULL
+  - EventType (varchar) NULL
+  - OrganizedBy (int) NULL
+  - IsHoliday (bit) NOT NULL
+  PK: EventID
+  FK: SchoolID → Schools.SchoolID
+  FK: OrganizedBy → Staff.StaffID
+
+Table: ExamTypes
+  - ExamTypeID (int) NOT NULL
+  - SchoolID (int) NOT NULL
+  - ExamTypeName (nvarchar) NOT NULL
+  - Weightage (decimal) NULL
+  - AcademicYearID (int) NOT NULL
+  PK: ExamTypeID
+  FK: SchoolID → Schools.SchoolID
+  FK: AcademicYearID → AcademicYears.AcademicYearID
+
+Table: Rooms
+  - RoomID (int) NOT NULL
+  - SchoolID (int) NOT NULL
+  - RoomNumber (varchar) NOT NULL
+  - RoomType (varchar) NOT NULL
+  - Floor (int) NULL
+  - Capacity (int) NULL
+  - HasProjector (bit) NOT NULL
+  - HasAC (bit) NOT NULL
+  - IsAvailable (bit) NOT NULL
+  PK: RoomID
+  FK: SchoolID → Schools.SchoolID
+
+Table: Examinations
+  - ExamID (int) NOT NULL
+  - ExamTypeID (int) NOT NULL
+  - SectionID (int) NOT NULL
+  - SubjectID (int) NOT NULL
+  - ExamDate (date) NOT NULL
+  - StartTime (time) NULL
+  - EndTime (time) NULL
+  - MaxMarks (decimal) NOT NULL
+  - PassMarks (decimal) NOT NULL
+  - HallNumber (varchar) NULL
+  - Invigilator (int) NULL
+  PK: ExamID
+  FK: SubjectID → Subjects.SubjectID
+  FK: ExamTypeID → ExamTypes.ExamTypeID
+  FK: Invigilator → Staff.StaffID
+  FK: SectionID → Sections.SectionID
+
+Table: StudentCategories
+  - CategoryID (int) NOT NULL
+  - CategoryName (nvarchar) NOT NULL
+  - Description (nvarchar) NULL
+  - IsActive (bit) NOT NULL
+  PK: CategoryID
+
+Table: Assets
+  - AssetID (int) NOT NULL
+  - SchoolID (int) NOT NULL
+  - AssetName (nvarchar) NOT NULL
+  - AssetCategory (nvarchar) NULL
+  - PurchaseDate (date) NULL
+  - PurchasePrice (decimal) NULL
+  - Supplier (nvarchar) NULL
+  - WarrantyExpiry (date) NULL
+  - Location (nvarchar) NULL
+  - Status (varchar) NOT NULL
+  - AssignedTo (int) NULL
+  PK: AssetID
+  FK: SchoolID → Schools.SchoolID
+  FK: AssignedTo → Staff.StaffID
+
+Table: ExamResults
+  - ResultID (int) NOT NULL
+  - ExamID (int) NOT NULL
+  - StudentID (int) NOT NULL
+  - MarksObtained (decimal) NULL
+  - IsAbsent (bit) NOT NULL
+  - Grade (varchar) NULL
+  - Remarks (nvarchar) NULL
+  - EnteredBy (int) NULL
+  - EnteredAt (datetime) NOT NULL
+  - IsVerified (bit) NOT NULL
+  PK: ResultID
+  FK: ExamID → Examinations.ExamID
+  FK: EnteredBy → Staff.StaffID
+  FK: StudentID → Students.StudentID
+
+Table: Religions
+  - ReligionID (int) NOT NULL
+  - ReligionName (nvarchar) NOT NULL
+  - IsActive (bit) NOT NULL
+  PK: ReligionID
+
+Table: MaintenanceLog
+  - MaintenanceID (int) NOT NULL
+  - AssetID (int) NOT NULL
+  - MaintenanceDate (date) NOT NULL
+  - Description (nvarchar) NULL
+  - Cost (decimal) NULL
+  - VendorName (nvarchar) NULL
+  - CompletedBy (int) NULL
+  - NextScheduled (date) NULL
+  PK: MaintenanceID
+  FK: AssetID → Assets.AssetID
+  FK: CompletedBy → Staff.StaffID
+
+Table: Nationalities
+  - NationalityID (int) NOT NULL
+  - NationalityName (nvarchar) NOT NULL
+  - IsActive (bit) NOT NULL
+  PK: NationalityID
+
+Table: Schools
+  - SchoolID (int) NOT NULL
+  - SchoolName (nvarchar) NOT NULL
+  - SchoolCode (varchar) NOT NULL
+  - EstablishedYear (int) NULL
+  - AffiliationBoard (nvarchar) NULL
+  - Address (nvarchar) NULL
+  - City (nvarchar) NULL
+  - State (nvarchar) NULL
+  - PinCode (varchar) NULL
+  - Phone (varchar) NULL
+  - Email (varchar) NULL
+  - Website (varchar) NULL
+  - LogoPath (nvarchar) NULL
+  - IsActive (bit) NOT NULL
+  - CreatedAt (datetime) NOT NULL
+  PK: SchoolID
+
+Table: ReportCards
+  - ReportCardID (int) NOT NULL
+  - StudentID (int) NOT NULL
+  - AcademicYearID (int) NOT NULL
+  - ExamTypeID (int) NOT NULL
+  - TotalMarks (decimal) NOT NULL
+  - ObtainedMarks (decimal) NOT NULL
+  - Percentage (decimal) NULL
+  - Rank (int) NULL
+  - Grade (varchar) NULL
+  - Result (varchar) NULL
+  - Attendance (decimal) NULL
+  - GeneratedAt (datetime) NOT NULL
+  PK: ReportCardID
+  FK: ExamTypeID → ExamTypes.ExamTypeID
+  FK: AcademicYearID → AcademicYears.AcademicYearID
+  FK: StudentID → Students.StudentID
+
+Table: AcademicYears
+  - AcademicYearID (int) NOT NULL
+  - SchoolID (int) NOT NULL
+  - YearLabel (varchar) NOT NULL
+  - StartDate (date) NOT NULL
+  - EndDate (date) NOT NULL
+  - IsCurrent (bit) NOT NULL
+  PK: AcademicYearID
+  FK: SchoolID → Schools.SchoolID
+
+Table: Departments
+  - DepartmentID (int) NOT NULL
+  - SchoolID (int) NOT NULL
+  - DeptName (nvarchar) NOT NULL
+  - DeptCode (varchar) NULL
+  - HeadStaffID (int) NULL
+  - IsActive (bit) NOT NULL
+  PK: DepartmentID
+  FK: SchoolID → Schools.SchoolID
+  FK: HeadStaffID → Staff.StaffID
+
+Table: FeeCategories
+  - FeeCategoryID (int) NOT NULL
+  - SchoolID (int) NOT NULL
+  - CategoryName (nvarchar) NOT NULL
+  - Description (nvarchar) NULL
+  - IsRefundable (bit) NOT NULL
+  - IsActive (bit) NOT NULL
+  PK: FeeCategoryID
+  FK: SchoolID → Schools.SchoolID
+
+Table: Classes
+  - ClassID (int) NOT NULL
+  - SchoolID (int) NOT NULL
+  - ClassName (nvarchar) NOT NULL
+  - ClassNumeric (int) NOT NULL
+  - Stream (nvarchar) NULL
+  - IsActive (bit) NOT NULL
+  PK: ClassID
+  FK: SchoolID → Schools.SchoolID
+
+Table: FeeStructure
+  - FeeStructureID (int) NOT NULL
+  - AcademicYearID (int) NOT NULL
+  - ClassID (int) NOT NULL
+  - FeeCategoryID (int) NOT NULL
+  - Amount (decimal) NOT NULL
+  - Frequency (varchar) NOT NULL
+  - DueDay (int) NULL
+  - LateFinePerDay (decimal) NOT NULL
+  PK: FeeStructureID
+  FK: AcademicYearID → AcademicYears.AcademicYearID
+  FK: FeeCategoryID → FeeCategories.FeeCategoryID
+  FK: ClassID → Classes.ClassID
+
+Table: Staff
+  - StaffID (int) NOT NULL
+  - SchoolID (int) NOT NULL
+  - EmployeeCode (varchar) NOT NULL
+  - FirstName (nvarchar) NOT NULL
+  - LastName (nvarchar) NOT NULL
+  - Gender (varchar) NULL
+  - DateOfBirth (date) NULL
+  - BloodGroup (varchar) NULL
+  - Email (varchar) NOT NULL
+  - Phone (varchar) NULL
+  - AlternatePhone (varchar) NULL
+  - Address (nvarchar) NULL
+  - City (nvarchar) NULL
+  - State (nvarchar) NULL
+  - PinCode (varchar) NULL
+  - JoiningDate (date) NOT NULL
+  - RelievingDate (date) NULL
+  - DepartmentID (int) NULL
+  - Designation (nvarchar) NULL
+  - StaffType (varchar) NULL
+  - Qualification (nvarchar) NULL
+  - Experience (int) NULL
+  - ProfilePhotoPath (nvarchar) NULL
+  - IsActive (bit) NOT NULL
+  - CreatedAt (datetime) NOT NULL
+  PK: StaffID
+  FK: SchoolID → Schools.SchoolID
+  FK: DepartmentID → Departments.DepartmentID
+
+Table: FeeInvoices
+  - InvoiceID (int) NOT NULL
+  - StudentID (int) NOT NULL
+  - AcademicYearID (int) NOT NULL
+  - InvoiceNumber (varchar) NOT NULL
+  - InvoiceDate (date) NOT NULL
+  - DueDate (date) NOT NULL
+  - TotalAmount (decimal) NOT NULL
+  - Discount (decimal) NOT NULL
+  - LateFine (decimal) NOT NULL
+  - NetAmount (decimal) NOT NULL
+  - Status (varchar) NOT NULL
+  - Remarks (nvarchar) NULL
+  PK: InvoiceID
+  FK: AcademicYearID → AcademicYears.AcademicYearID
+  FK: StudentID → Students.StudentID
+
+Table: StaffDocuments
+  - DocumentID (int) NOT NULL
+  - StaffID (int) NOT NULL
+  - DocumentType (varchar) NOT NULL
+  - DocumentNumber (varchar) NULL
+  - FilePath (nvarchar) NULL
+  - UploadedAt (datetime) NOT NULL
+  - VerifiedBy (int) NULL
+  PK: DocumentID
+  FK: StaffID → Staff.StaffID
+  FK: VerifiedBy → Staff.StaffID
+
+Table: FeePayments
+  - PaymentID (int) NOT NULL
+  - InvoiceID (int) NOT NULL
+  - PaymentDate (date) NOT NULL
+  - AmountPaid (decimal) NOT NULL
+  - PaymentMode (varchar) NOT NULL
+  - TransactionRef (varchar) NULL
+  - ReceiptNumber (varchar) NOT NULL
+  - CollectedBy (int) NULL
+  - Remarks (nvarchar) NULL
+  PK: PaymentID
+  FK: CollectedBy → Staff.StaffID
+  FK: InvoiceID → FeeInvoices.InvoiceID
+
+Table: StaffAttendance
+  - AttendanceID (int) NOT NULL
+  - StaffID (int) NOT NULL
+  - AttendanceDate (date) NOT NULL
+  - Status (varchar) NOT NULL
+  - InTime (time) NULL
+  - OutTime (time) NULL
+  - Remarks (nvarchar) NULL
+  - MarkedBy (int) NULL
+  PK: AttendanceID
+  FK: StaffID → Staff.StaffID
+  FK: MarkedBy → Staff.StaffID
+
+Table: Scholarships
+  - ScholarshipID (int) NOT NULL
+  - SchoolID (int) NOT NULL
+  - ScholarshipName (nvarchar) NOT NULL
+  - Description (nvarchar) NULL
+  - DiscountType (varchar) NOT NULL
+  - DiscountValue (decimal) NOT NULL
+  - AcademicYearID (int) NOT NULL
+  - IsActive (bit) NOT NULL
+  PK: ScholarshipID
+  FK: SchoolID → Schools.SchoolID
+  FK: AcademicYearID → AcademicYears.AcademicYearID
+
+Table: StaffLeave
+  - LeaveID (int) NOT NULL
+  - StaffID (int) NOT NULL
+  - AcademicYearID (int) NOT NULL
+  - LeaveType (varchar) NOT NULL
+  - FromDate (date) NOT NULL
+  - ToDate (date) NOT NULL
+  - TotalDays (decimal) NOT NULL
+  - Reason (nvarchar) NULL
+  - Status (varchar) NOT NULL
+  - ApprovedBy (int) NULL
+  - ApprovedAt (datetime) NULL
+  PK: LeaveID
+  FK: AcademicYearID → AcademicYears.AcademicYearID
+  FK: StaffID → Staff.StaffID
+  FK: ApprovedBy → Staff.StaffID
+
+Table: StudentScholarships
+  - StudentScholarshipID (int) NOT NULL
+  - StudentID (int) NOT NULL
+  - ScholarshipID (int) NOT NULL
+  - GrantedDate (date) NOT NULL
+  - ApprovedBy (int) NULL
+  - Remarks (nvarchar) NULL
+  PK: StudentScholarshipID
+  FK: ApprovedBy → Staff.StaffID
+  FK: ScholarshipID → Scholarships.ScholarshipID
+  FK: StudentID → Students.StudentID
+
+Table: StaffSalary
+  - SalaryID (int) NOT NULL
+  - StaffID (int) NOT NULL
+  - Month (int) NOT NULL
+  - Year (int) NOT NULL
+  - BasicSalary (decimal) NOT NULL
+  - HRA (decimal) NOT NULL
+  - DA (decimal) NOT NULL
+  - OtherAllowances (decimal) NOT NULL
+  - PF (decimal) NOT NULL
+  - TDS (decimal) NOT NULL
+  - OtherDeductions (decimal) NOT NULL
+  - NetSalary (decimal) NOT NULL
+  - PaymentDate (date) NULL
+  - PaymentMode (varchar) NULL
+  - BankTxnRef (varchar) NULL
+  PK: SalaryID
+  FK: StaffID → Staff.StaffID
+
+Table: Books
+  - BookID (int) NOT NULL
+  - SchoolID (int) NOT NULL
+  - ISBN (varchar) NULL
+  - Title (nvarchar) NOT NULL
+  - Author (nvarchar) NULL
+  - Publisher (nvarchar) NULL
+  - Edition (varchar) NULL
+  - PublishedYear (int) NULL
+  - Category (nvarchar) NULL
+  - SubjectID (int) NULL
+  - Language (nvarchar) NULL
+  - TotalCopies (int) NOT NULL
+  - AvailableCopies (int) NOT NULL
+  - ShelfLocation (varchar) NULL
+  - IsActive (bit) NOT NULL
+  PK: BookID
+  FK: SubjectID → Subjects.SubjectID
+  FK: SchoolID → Schools.SchoolID
+
+Table: BookIssues
+  - IssueID (int) NOT NULL
+  - BookID (int) NOT NULL
+  - BorrowerType (varchar) NOT NULL
+  - BorrowerID (int) NOT NULL
+  - IssueDate (date) NOT NULL
+  - DueDate (date) NOT NULL
+  - ReturnDate (date) NULL
+  - FineAmount (decimal) NOT NULL
+  - FinePaid (bit) NOT NULL
+  - IssuedBy (int) NULL
+  - ReturnedTo (int) NULL
+  - Remarks (nvarchar) NULL
+  PK: IssueID
+  FK: IssuedBy → Staff.StaffID
+  FK: ReturnedTo → Staff.StaffID
+  FK: BookID → Books.BookID
+
+Table: Sections
+  - SectionID (int) NOT NULL
+  - ClassID (int) NOT NULL
+  - AcademicYearID (int) NOT NULL
+  - SectionName (varchar) NOT NULL
+  - RoomNumber (varchar) NULL
+  - Capacity (int) NULL
+  - ClassTeacherID (int) NULL
+  PK: SectionID
+  FK: AcademicYearID → AcademicYears.AcademicYearID
+  FK: ClassID → Classes.ClassID
+  FK: ClassTeacherID → Staff.StaffID
+
+Table: Vehicles
+  - VehicleID (int) NOT NULL
+  - SchoolID (int) NOT NULL
+  - VehicleNumber (varchar) NOT NULL
+  - VehicleType (varchar) NULL
+  - Model (nvarchar) NULL
+  - Capacity (int) NULL
+  - DriverID (int) NULL
+  - AttendantID (int) NULL
+  - InsuranceExpiry (date) NULL
+  - FitnessExpiry (date) NULL
+  - GPSTrackerID (varchar) NULL
+  - IsActive (bit) NOT NULL
+  PK: VehicleID
+  FK: SchoolID → Schools.SchoolID
+  FK: DriverID → Staff.StaffID
+  FK: AttendantID → Staff.StaffID
+
+Table: Students
+  - StudentID (int) NOT NULL
+  - SchoolID (int) NOT NULL
+  - AdmissionNumber (varchar) NOT NULL
+  - RollNumber (varchar) NULL
+  - FirstName (nvarchar) NOT NULL
+  - LastName (nvarchar) NOT NULL
+  - Gender (varchar) NULL
+  - DateOfBirth (date) NULL
+  - BloodGroup (varchar) NULL
+  - CategoryID (int) NULL
+  - ReligionID (int) NULL
+  - NationalityID (int) NULL
+  - MotherTongue (nvarchar) NULL
+  - AadharNumber (varchar) NULL
+  - ProfilePhotoPath (nvarchar) NULL
+  - AdmissionDate (date) NOT NULL
+  - AdmissionClassID (int) NOT NULL
+  - CurrentSectionID (int) NULL
+  - PreviousSchool (nvarchar) NULL
+  - IsActive (bit) NOT NULL
+  - CreatedAt (datetime) NOT NULL
+  PK: StudentID
+  FK: CategoryID → StudentCategories.CategoryID
+  FK: ReligionID → Religions.ReligionID
+  FK: NationalityID → Nationalities.NationalityID
+  FK: SchoolID → Schools.SchoolID
+  FK: AdmissionClassID → Classes.ClassID
+  FK: CurrentSectionID → Sections.SectionID
+
+Table: Routes
+  - RouteID (int) NOT NULL
+  - SchoolID (int) NOT NULL
+  - RouteName (nvarchar) NOT NULL
+  - VehicleID (int) NULL
+  - StartPoint (nvarchar) NULL
+  - EndPoint (nvarchar) NULL
+  - MorningDepartureTime (time) NULL
+  - EveningDepartureTime (time) NULL
+  - IsActive (bit) NOT NULL
+  PK: RouteID
+  FK: SchoolID → Schools.SchoolID
+  FK: VehicleID → Vehicles.VehicleID
+

@@ -14,7 +14,7 @@ namespace AIQueryPlatform.Api.Services;
 public class RecommendationService : IRecommendationService
 {
     private readonly ILogger<RecommendationService> _logger;
-    private readonly OpenAIClient _openAIClient;
+    private readonly AzureOpenAIClient _openAIClient;
     private readonly string _deploymentName;
     private readonly int _maxTokens;
     private readonly float _temperature;
@@ -37,7 +37,7 @@ public class RecommendationService : IRecommendationService
         _maxTokens = configuration.GetValue<int>("OpenAI:RecommendationMaxTokens", 1500);
         _temperature = configuration.GetValue<float>("OpenAI:RecommendationTemperature", 0.3f);
 
-        _openAIClient = new OpenAIClient(new Uri(endpoint), new AzureKeyCredential(apiKey));
+        _openAIClient = new AzureOpenAIClient(new Uri(endpoint), new AzureKeyCredential(apiKey));
     }
 
     public async Task<List<RecommendationDto>> GenerateRecommendationsAsync(
@@ -63,41 +63,41 @@ public class RecommendationService : IRecommendationService
             var systemPrompt = BuildSystemPrompt();
             var userPrompt = BuildUserPrompt(query, result, schemaContext);
 
-            var chatCompletionsOptions = new ChatCompletionsOptions
-            {
-                DeploymentName = _deploymentName,
-                Messages =
-                {
-                    new ChatRequestSystemMessage(systemPrompt),
-                    new ChatRequestUserMessage(userPrompt)
-                },
-                MaxTokens = _maxTokens,
-                Temperature = _temperature,
-                ResponseFormat = ChatCompletionsResponseFormat.JsonObject
-            };
+            //var chatCompletionsOptions = new ChatCompletionsOptions
+            //{
+            //    DeploymentName = _deploymentName,
+            //    Messages =
+            //    {
+            //        new ChatRequestSystemMessage(systemPrompt),
+            //        new  ChatRequestUserMessage(userPrompt)
+            //    },
+            //    MaxTokens = _maxTokens,
+            //    Temperature = _temperature,
+            //    ResponseFormat = ChatCompletionsResponseFormat.JsonObject
+            //};
 
             _logger.LogInformation("Generating recommendations for query: {Query}", query);
 
-            var response = await _openAIClient.GetChatCompletionsAsync(chatCompletionsOptions);
-            var jsonResponse = response.Value.Choices[0].Message.Content;
+            //var response = await _openAIClient.GetChatCompletionsAsync(chatCompletionsOptions);
+            //var jsonResponse = response.Value.Choices[0].Message.Content;
 
-            // Track token usage
-            if (_tenantContext.HasTenant && response.Value.HasTokenUsage())
-            {
-                var (promptTokens, completionTokens, totalTokens) = response.Value.ExtractTokenUsage();
-                await _tokenUsageService.RecordTokenUsageAsync(new RecordTokenUsageRequest
-                {
-                    TenantId = _tenantContext.CurrentTenant!.TenantId,
-                    RequestTokens = promptTokens,
-                    ResponseTokens = completionTokens,
-                    TotalTokens = totalTokens,
-                    ModelName = _deploymentName,
-                    Endpoint = "Recommendations",
-                    Query = query,
-                    Status = "Success"
-                });
-            }
-
+            //// Track token usage
+            //if (_tenantContext.HasTenant && response.Value.HasTokenUsage())
+            //{
+            //    var (promptTokens, completionTokens, totalTokens) = response.Value.ExtractTokenUsage();
+            //    await _tokenUsageService.RecordTokenUsageAsync(new RecordTokenUsageRequest
+            //    {
+            //        TenantId = _tenantContext.CurrentTenant!.TenantId,
+            //        RequestTokens = promptTokens,
+            //        ResponseTokens = completionTokens,
+            //        TotalTokens = totalTokens,
+            //        ModelName = _deploymentName,
+            //        Endpoint = "Recommendations",
+            //        Query = query,
+            //        Status = "Success"
+            //    });
+            //}
+            var jsonResponse = "";
             _logger.LogDebug("LLM Response: {Response}", jsonResponse);
 
             // Parse the JSON response

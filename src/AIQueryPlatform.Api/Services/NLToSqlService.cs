@@ -4,6 +4,8 @@ using AIQueryPlatform.Api.Models.DTOs;
 using AIQueryPlatform.Api.Services.Interfaces;
 using Azure;
 using Azure.AI.OpenAI;
+using Microsoft.Extensions.Options;
+using OpenAI.Chat;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -15,7 +17,7 @@ namespace AIQueryPlatform.Api.Services;
 public class NLToSqlService : INLToSqlService
 {
     private readonly ILogger<NLToSqlService> _logger;
-    private readonly OpenAIClient _openAIClient;
+    private readonly AzureOpenAIClient _openAIClient;
     private readonly string _deploymentName;
     private readonly int _maxTokens;
     private readonly float _temperature;
@@ -34,14 +36,14 @@ public class NLToSqlService : INLToSqlService
         _promptBuilderFactory = promptBuilderFactory;
         _tokenUsageService = tokenUsageService;
         _tenantContext = tenantContext;
-        
+
         var endpoint = configuration["OpenAI:Endpoint"] ?? throw new ArgumentNullException("OpenAI:Endpoint");
         var apiKey = configuration["OpenAI:ApiKey"] ?? throw new ArgumentNullException("OpenAI:ApiKey");
         _deploymentName = configuration["OpenAI:DeploymentName"] ?? "gpt-4";
         _maxTokens = configuration.GetValue<int>("OpenAI:MaxTokens", 500);
         _temperature = configuration.GetValue<float>("OpenAI:Temperature", 0.0f);
 
-        _openAIClient = new OpenAIClient(new Uri(endpoint), new AzureKeyCredential(apiKey));
+       // _openAIClient = new AzureOpenAIClient(new Uri(endpoint), new AzureKeyCredential(apiKey));
     }
 
     public async Task<string> ConvertNaturalLanguageToSqlAsync(string query, DatabaseSchema schema, DatabaseType databaseType = DatabaseType.SqlServer)
@@ -53,39 +55,42 @@ public class NLToSqlService : INLToSqlService
             var systemPrompt = promptBuilder.BuildSystemPrompt(schema);
             var userPrompt = query;
 
-            var chatCompletionsOptions = new ChatCompletionsOptions
+            var messages = new List<ChatMessage>
             {
-                DeploymentName = _deploymentName,
-                Messages =
-                {
-                    new ChatRequestSystemMessage(systemPrompt),
-                    new ChatRequestUserMessage(userPrompt)
-                },
-                MaxTokens = _maxTokens,
-                Temperature = _temperature
+                new SystemChatMessage(systemPrompt),
+                new UserChatMessage(userPrompt)
             };
 
+            var chatCompletionOptions = new ChatCompletionOptions
+            {
+                MaxOutputTokenCount = _maxTokens,
+                Temperature = (float)_temperature
+            };
             _logger.LogInformation("Sending request to OpenAI for query: {Query} (Database: {DatabaseType})", query, databaseType);
 
-            var response = await _openAIClient.GetChatCompletionsAsync(chatCompletionsOptions);
-            var sqlQuery = response.Value.Choices[0].Message.Content;
+            var _chatClient = _openAIClient.GetChatClient(_deploymentName);
 
-            // Track token usage
-            if (_tenantContext.HasTenant && response.Value.HasTokenUsage())
-            {
-                var (promptTokens, completionTokens, totalTokens) = response.Value.ExtractTokenUsage();
-                await _tokenUsageService.RecordTokenUsageAsync(new RecordTokenUsageRequest
-                {
-                    TenantId = _tenantContext.CurrentTenant!.TenantId,
-                    RequestTokens = promptTokens,
-                    ResponseTokens = completionTokens,
-                    TotalTokens = totalTokens,
-                    ModelName = _deploymentName,
-                    Endpoint = "NL-to-SQL",
-                    Query = query,
-                    Status = "Success"
-                });
-            }
+            var response = await _chatClient.CompleteChatAsync(
+                messages,
+                chatCompletionOptions);
+            var sqlQuery = response.Value.Content[0].Text;
+
+            //// Track token usage
+            //if (_tenantContext.HasTenant && response.Value.HasTokenUsage())
+            //{
+            //    var (promptTokens, completionTokens, totalTokens) = response.Value.ExtractTokenUsage();
+            //    await _tokenUsageService.RecordTokenUsageAsync(new RecordTokenUsageRequest
+            //    {
+            //        TenantId = _tenantContext.CurrentTenant!.TenantId,
+            //        RequestTokens = promptTokens,
+            //        ResponseTokens = completionTokens,
+            //        TotalTokens = totalTokens,
+            //        ModelName = _deploymentName,
+            //        Endpoint = "NL-to-SQL",
+            //        Query = query,
+            //        Status = "Success"
+            //    });
+            //}
 
             // Clean up the response using database-specific cleaner
             sqlQuery = promptBuilder.CleanSqlResponse(sqlQuery);

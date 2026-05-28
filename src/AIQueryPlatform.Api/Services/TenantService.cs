@@ -98,7 +98,7 @@ public class TenantService : ITenantService
             await connection.OpenAsync();
 
             var query = @"
-                SELECT TenantId, Name, ApiKey, ConnectionString, LogoUrl, ThemeColor, IsActive, EnableInsights
+                SELECT TenantId, Name, ApiKey, ConnectionString, LogoUrl, ThemeColor, IsActive, EnableInsights,SchemaFile
                 FROM Tenants
                 WHERE ApiKey = @ApiKey";
 
@@ -118,7 +118,8 @@ public class TenantService : ITenantService
                     LogoUrl = reader.IsDBNull(4) ? null : reader.GetString(4),
                     ThemeColor = reader.IsDBNull(5) ? null : reader.GetString(5),
                     IsActive = reader.GetBoolean(6),
-                    EnableInsights = reader.GetBoolean(7)
+                    EnableInsights = reader.GetBoolean(7),
+                    SchemaFile = reader.IsDBNull(8) ? null : reader.GetString(8)
                 };
 
                 _cache.Set(cacheKey, tenant, CacheDuration);
@@ -157,7 +158,7 @@ public class TenantService : ITenantService
             await connection.OpenAsync();
 
             var query = @"
-                SELECT TenantId, Name, ApiKey, ConnectionString, LogoUrl, ThemeColor, IsActive, EnableInsights
+                SELECT TenantId, Name, ApiKey, ConnectionString, LogoUrl, ThemeColor, IsActive, EnableInsights,SchemaFile
                 FROM Tenants
                 WHERE IsActive = 1
                 ORDER BY Name";
@@ -178,7 +179,8 @@ public class TenantService : ITenantService
                     LogoUrl = reader.IsDBNull(4) ? null : reader.GetString(4),
                     ThemeColor = reader.IsDBNull(5) ? null : reader.GetString(5),
                     IsActive = reader.GetBoolean(6),
-                    EnableInsights = reader.GetBoolean(7)
+                    EnableInsights = reader.GetBoolean(7),
+                    SchemaFile = reader.IsDBNull(8) ? null : reader.GetString(8)
                 };
 
                 tenants.Add(tenant);

@@ -1,6 +1,9 @@
 using AIQueryPlatform.Api.Models;
 using AIQueryPlatform.Api.Models.DTOs;
 using AIQueryPlatform.Api.Services.Interfaces;
+using AIQueryPlatform.LLMServiceOperator;
+using AIQueryPlatform.LLMServiceOperator.Interface;
+using AIQueryPlatform.LLMServiceOperator.Models;
 using System.Diagnostics;
 
 namespace AIQueryPlatform.Api.Services;
@@ -18,6 +21,7 @@ public class QueryOrchestrationService : IQueryOrchestrationService
     private readonly IIntelligenceLayerService _intelligenceLayerService;
     private readonly ILogger<QueryOrchestrationService> _logger;
     private readonly int _maxRowLimit;
+    private readonly ILLMServicePipe _llmServicePipe;
 
     public QueryOrchestrationService(
         TenantContext tenantContext,
@@ -27,7 +31,8 @@ public class QueryOrchestrationService : IQueryOrchestrationService
         ISchemaService schemaService,
         IIntelligenceLayerService intelligenceLayerService,
         IConfiguration configuration,
-        ILogger<QueryOrchestrationService> logger)
+        ILogger<QueryOrchestrationService> logger,
+        ILLMServicePipe llmServicePipe)
     {
         _tenantContext = tenantContext;
         _nlToSqlService = nlToSqlService;
@@ -37,6 +42,7 @@ public class QueryOrchestrationService : IQueryOrchestrationService
         _intelligenceLayerService = intelligenceLayerService;
         _logger = logger;
         _maxRowLimit = configuration.GetValue<int>("QueryExecution:MaxRowLimit", 100);
+        _llmServicePipe = llmServicePipe;
     }
 
     public async IAsyncEnumerable<StreamEvent> ExecuteQueryStreamAsync(string query)
@@ -56,7 +62,7 @@ public class QueryOrchestrationService : IQueryOrchestrationService
 
         // Step 1: Log initial query
         _logger.LogInformation("Processing query for tenant {TenantId}: {Query}", tenant.TenantId, query);
-        
+
         yield return new StreamEvent
         {
             Type = "log",
@@ -72,7 +78,7 @@ public class QueryOrchestrationService : IQueryOrchestrationService
 
         DatabaseSchema? schema = null;
         Exception? schemaError = null;
-        
+
         try
         {
             schema = await _schemaService.GetDatabaseSchemaAsync(tenant.ConnectionString, tenant.TenantId);
@@ -102,7 +108,7 @@ public class QueryOrchestrationService : IQueryOrchestrationService
 
         string? sql = null;
         Exception? sqlError = null;
-        
+
         try
         {
             sql = await _nlToSqlService.ConvertNaturalLanguageToSqlAsync(query, schema!, tenant.DatabaseType);
@@ -169,7 +175,7 @@ public class QueryOrchestrationService : IQueryOrchestrationService
 
         QueryResult? result = null;
         Exception? executionError = null;
-        
+
         try
         {
             result = await _queryExecutionService.ExecuteQueryAsync(sql!, tenant.ConnectionString, tenant.DatabaseType);
@@ -252,7 +258,7 @@ public class QueryOrchestrationService : IQueryOrchestrationService
             Message = $"Query completed in {stopwatch.ElapsedMilliseconds}ms"
         };
 
-        _logger.LogInformation("Query completed successfully for tenant {TenantId} in {ElapsedMs}ms", 
+        _logger.LogInformation("Query completed successfully for tenant {TenantId} in {ElapsedMs}ms",
             tenant.TenantId, stopwatch.ElapsedMilliseconds);
     }
 
@@ -269,58 +275,74 @@ public class QueryOrchestrationService : IQueryOrchestrationService
 
         var tenant = _tenantContext.CurrentTenant!;
         var stopwatch = Stopwatch.StartNew();
-
+        var result = new QueryResult();
+        // Generate chart data if suitable
+        ChartData? chartData = null;
         try
         {
             _logger.LogInformation("Processing query for tenant {TenantId}: {Query}", tenant.TenantId, query);
 
             // Load schema
-            var schema = await _schemaService.GetDatabaseSchemaAsync(tenant.ConnectionString, tenant.TenantId);
+            //var schema = await _schemaService.GetDatabaseSchemaAsync(tenant.ConnectionString, tenant.TenantId);
 
             // Convert NL to SQL
-            var sql = await _nlToSqlService.ConvertNaturalLanguageToSqlAsync(query, schema, tenant.DatabaseType);
-
-            // Validate SQL
-            if (!_sqlValidatorService.IsValidSelectQuery(sql, out var validationError))
+            //var sql = await _nlToSqlService.ConvertNaturalLanguageToSqlAsync(query, schema, tenant.DatabaseType);
+            TenantData td = new TenantData
             {
-                return new QueryResponse
-                {
-                    Success = false,
-                    ErrorMessage = $"SQL validation failed: {validationError}",
-                    GeneratedSql = sql
-                };
-            }
+                TenantDB = tenant.ConnectionString,
+                TenantId = tenant.TenantId.ToString(),
+                TenantName = tenant.Name,
+                SchemaFile = tenant.SchemaFile
+            };
 
-            // Enforce row limit
-            sql = _sqlValidatorService.EnforceRowLimit(sql, _maxRowLimit);
+            // Using the new LLMServicePipe to process the query through the entire pipeline
+            var response = await _llmServicePipe.ProcessQuery(query, td);
+            var visualizationType = VisualizationType.TEXT; // Default to chart, will adjust based on response
 
-            // Execute query
-            var result = await _queryExecutionService.ExecuteQueryAsync(sql, tenant.ConnectionString, tenant.DatabaseType);
-
-            // Determine visualization type
-            var visualizationType = _intelligenceLayerService.DetermineVisualizationType(query, result);
-
-            // Generate chart data if suitable
-            ChartData? chartData = null;
-            if (visualizationType == VisualizationType.Chart)
+            if (response.Type == ResponseType.SQL)
             {
-                chartData = _intelligenceLayerService.ConvertToChartData(result);
-                if (chartData == null)
+                string sql = response.SQL;
+                // Validate SQL
+                if (!_sqlValidatorService.IsValidSelectQuery(sql, out var validationError))
                 {
-                    // Fallback to table if chart conversion fails
-                    visualizationType = VisualizationType.Table;
+                    return new QueryResponse
+                    {
+                        Success = false,
+                        ErrorMessage = $"SQL validation failed: {validationError}",
+                        GeneratedSql = sql
+                    };
                 }
-            }
 
+                // Enforce row limit
+                sql = _sqlValidatorService.EnforceRowLimit(sql, _maxRowLimit);
+
+                // Execute query
+                result = await _queryExecutionService.ExecuteQueryAsync(sql, tenant.ConnectionString, tenant.DatabaseType);
+
+                // Determine visualization type
+                visualizationType = _intelligenceLayerService.DetermineVisualizationType(query, result);
+
+
+                if (visualizationType == VisualizationType.Chart)
+                {
+                    chartData = _intelligenceLayerService.ConvertToChartData(result);
+                    if (chartData == null)
+                    {
+                        // Fallback to table if chart conversion fails
+                        visualizationType = VisualizationType.Table;
+                    }
+                }
+
+            }
             stopwatch.Stop();
 
-            _logger.LogInformation("Query completed successfully for tenant {TenantId} in {ElapsedMs}ms", 
+            _logger.LogInformation("Query completed successfully for tenant {TenantId} in {ElapsedMs}ms",
                 tenant.TenantId, stopwatch.ElapsedMilliseconds);
 
             return new QueryResponse
             {
                 Success = true,
-                GeneratedSql = sql,
+                GeneratedSql = response.Type == ResponseType.SQL ? response.SQL : response.Message,
                 Result = result,
                 VisualizationType = visualizationType,
                 ChartData = chartData,

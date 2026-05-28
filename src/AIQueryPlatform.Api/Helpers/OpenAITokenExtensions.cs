@@ -1,4 +1,5 @@
 using Azure.AI.OpenAI;
+using OpenAI.Chat;
 
 namespace AIQueryPlatform.Api.Helpers;
 
@@ -11,21 +12,21 @@ public static class OpenAITokenExtensions
     /// Extract token usage from OpenAI ChatCompletions response
     /// </summary>
     public static (int promptTokens, int completionTokens, int totalTokens) ExtractTokenUsage(
-        this ChatCompletions response)
+        this ChatCompletion response)
     {
         var usage = response.Usage;
         
         return (
-            promptTokens: usage.PromptTokens,
-            completionTokens: usage.CompletionTokens,
-            totalTokens: usage.TotalTokens
+            promptTokens: usage.InputTokenCount,
+            completionTokens: usage.OutputTokenCount,
+            totalTokens: usage.TotalTokenCount
         );
     }
 
     /// <summary>
     /// Check if response contains token usage information
     /// </summary>
-    public static bool HasTokenUsage(this ChatCompletions response)
+    public static bool HasTokenUsage(this ChatCompletion response)
     {
         return response.Usage != null;
     }
