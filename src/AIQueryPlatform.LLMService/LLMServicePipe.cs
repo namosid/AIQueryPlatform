@@ -87,7 +87,7 @@ namespace AIQueryPlatform.LLMServiceOperator
                 }
                 if (userPrompt.ToLower() == "history")
                 {
-                    result.Message = memory.GetHistory(HistoryMode.AllChains);
+                    result.Message = memory.GetHistory(HistoryMode.AllChains, includeSQL: false);
                     result.Type = ResponseType.MESSAGE;
                     return result;
                 }
@@ -104,7 +104,7 @@ namespace AIQueryPlatform.LLMServiceOperator
                 string refinedPrompt = userPrompt;
                 bool turnAlreadyAdded = false;
 
-               var extractedForIntent =  EntityNameExtractor.ResolveEntity(originalPrompt, memory.GetLatestTurn());
+                var extractedForIntent = EntityNameExtractor.ResolveEntity(originalPrompt, memory.GetLatestTurn());
 
                 // ── CASE 1: Waiting for clarification answer ───────────
                 if (memory.WaitingForAnswer)
@@ -121,8 +121,8 @@ namespace AIQueryPlatform.LLMServiceOperator
                     refinedPrompt = memory.EnrichWithContext(userPrompt);
                     Helper.LogMessage($"[Agent] Follow-up enriched: '{originalPrompt}'");
                 }
-                
-                
+
+
                 // -─ CASE 3: Check Query Intent ─────────────────────────
                 else
                 {
@@ -154,7 +154,7 @@ namespace AIQueryPlatform.LLMServiceOperator
                 }
 
                 // PREPARE PROMPT FOR LLM
-                finalQuery = BuildLLMPrompt(memory.GetHistory(HistoryMode.CurrentChainOnly), refinedPrompt);
+                finalQuery = BuildLLMPrompt(memory.GetHistory(HistoryMode.CurrentChainOnly, includeSQL: true), refinedPrompt);
                 var validate = false;
 
                 var count = 0;
@@ -168,15 +168,15 @@ namespace AIQueryPlatform.LLMServiceOperator
                     if (lastTurn?.ResolvedEntity != null)
                         extractor = lastTurn.ResolvedEntity with { IsPronoun = false };
                 }
-
+                var llmPrompt = finalQuery;
                 while (!validate)
                 {
-                    if (count == 2)
+                    if (count == 3)
                     {
                         Helper.LogMessage("Validation Failed after 3 attempts. Returning last result.");
                         validate = true;
                         IsFailedQuery = true;
-                        result.SQL = finalQuery;
+                        result.SQL = llmPrompt;
                         result.Type = ResponseType.ERROR;
                         continue;
                     }
@@ -204,9 +204,9 @@ namespace AIQueryPlatform.LLMServiceOperator
 
                         Helper.LogMessage("No Schemantic Cache Found");
                         Helper.LogMessage("Vector Processing...");
-                        var output = await qdrantService.SearchAsync(finalQuery, embeddingService);
+                        var output = await qdrantService.SearchAsync(llmPrompt, embeddingService);
                         Helper.LogMessage("LLM Processing...");
-                        result.SQL = await llmService.AskAsync(output.Schema, finalQuery, memory.GetLatestTurn());
+                        result.SQL = await llmService.AskAsync(output.Schema, llmPrompt, memory.GetLatestTurn());
 
                         // Validaete the result before saving to cache
                         var validator = new DBValidator(fullSchema, tenant.TenantDB);
@@ -237,7 +237,12 @@ namespace AIQueryPlatform.LLMServiceOperator
                         else
                         {
                             validate = false;
-                            finalQuery = finalQuery + "\n" + pipeline.FixHint;
+                            if (count == 0)
+                            {
+                                llmPrompt = BuildLLMPrompt(memory.GetHistory(HistoryMode.CurrentChainOnly, includeSQL: false), refinedPrompt);
+                            }
+                            llmPrompt += "\n[VALIDATION FEEDBACK]\n" + pipeline.FixHint;
+                            llmPrompt += "\n[LAST SQL]\n" + result.SQL + "\n" + "[END SQL]";
                         }
                     }
                     count++;

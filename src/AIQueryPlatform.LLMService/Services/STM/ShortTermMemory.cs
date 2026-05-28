@@ -300,14 +300,14 @@ namespace AIQueryPlatform.LLMServiceOperator.Services.STM
             return originalPrompt;
         }
 
-        public string GetHistory(HistoryMode mode = HistoryMode.CurrentChainOnly)
+        public string GetHistory(HistoryMode mode = HistoryMode.CurrentChainOnly, bool includeSQL = true)
         {
             return mode switch
             {
-                HistoryMode.CurrentChainOnly => BuildChainHistory(_session.GetCurrentChain()),
+                HistoryMode.CurrentChainOnly => BuildChainHistory(_session.GetCurrentChain(), includeSQL),
                 HistoryMode.AllChains => BuildAllChainsHistory(),
                 HistoryMode.RawTurns => BuildRawHistory(),
-                _ => BuildChainHistory(_session.GetCurrentChain())
+                _ => BuildChainHistory(_session.GetCurrentChain(), includeSQL)
             };
         }
         // ── Context switch logic ─────────────────────────────────────────
@@ -327,7 +327,7 @@ namespace AIQueryPlatform.LLMServiceOperator.Services.STM
         }
 
         // ── 1. CURRENT CHAIN ONLY (recommended for LLM prompt) ──────────────
-        private string BuildChainHistory(MemoryChain? chain)
+        private string BuildChainHistory(MemoryChain? chain, bool includeSQL = true)
         {
             if (chain == null) return string.Empty;
 
@@ -344,18 +344,21 @@ namespace AIQueryPlatform.LLMServiceOperator.Services.STM
                 sb.AppendLine($"  User: {turn.RefinedQuery}");
             }
 
-            // ── Last Turn SQL Only — with length guard ───────────────────────
-            var lastTurn = chain.Turns.LastOrDefault();
-            if (lastTurn != null && !string.IsNullOrEmpty(lastTurn.GeneratedSQL))
+            if (includeSQL)
             {
-                var sql = lastTurn.GeneratedSQL.Length > 1000
-                 ? lastTurn.GeneratedSQL[..1000] + "\n-- [truncated]"
-                 : lastTurn.GeneratedSQL;
+                // ── Last Turn SQL Only — with length guard ───────────────────────
+                var lastTurn = chain.Turns.LastOrDefault();
+                if (lastTurn != null && !string.IsNullOrEmpty(lastTurn.GeneratedSQL))
+                {
+                    var sql = lastTurn.GeneratedSQL.Length > 1000
+                     ? lastTurn.GeneratedSQL[..1000] + "\n-- [truncated]"
+                     : lastTurn.GeneratedSQL;
 
-                sb.AppendLine();
-                sb.AppendLine("[LAST SQL]");
-                sb.AppendLine(sql);
-                sb.AppendLine("[END SQL]");
+                    sb.AppendLine();
+                    sb.AppendLine("[LAST SQL]");
+                    sb.AppendLine(sql);
+                    sb.AppendLine("[END SQL]");
+                }
             }
             return sb.ToString();
         }

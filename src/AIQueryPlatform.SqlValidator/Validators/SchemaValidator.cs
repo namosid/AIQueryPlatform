@@ -83,9 +83,13 @@ public class SchemaValidator(DatabaseSchema schema)
             {
                 // Check if this column exists in another table in the schema
                 var columnInOtherTable = schema.Tables
-                    .Where(t => !t.TableName.Equals(tableSchema.TableName, StringComparison.OrdinalIgnoreCase))
-                    .Select(t => new { Table = t, Column = t.GetColumn(columnName) })
-                    .FirstOrDefault(x => x.Column is not null);
+                .Where(t => !t.TableName.Equals(tableSchema.TableName, StringComparison.OrdinalIgnoreCase))
+                .Select(t => new { Table = t, Column = t.GetColumn(columnName) })
+                .Where(x => x.Column is not null)
+                // ✅ Prioritize: PK first, then FK, then any column
+                .OrderByDescending(x => x.Column.IsPrimaryKey)
+                .ThenByDescending(x => !x.Column.IsForeignKey)
+                .FirstOrDefault();
 
                 string suggestion;
 
