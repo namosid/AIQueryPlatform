@@ -155,10 +155,7 @@ namespace AIQueryPlatform.LLMServiceOperator
 
                 // PREPARE PROMPT FOR LLM
                 finalQuery = BuildLLMPrompt(memory.GetHistory(HistoryMode.CurrentChainOnly, includeSQL: true), refinedPrompt);
-                var validate = false;
 
-                var count = 0;
-                var IsFailedQuery = false;
 
                 var extractor = EntityNameExtractor.Extract(originalPrompt);
                 // ── Step 2: Resolve pronoun from last turn ────────────────────────
@@ -169,56 +166,57 @@ namespace AIQueryPlatform.LLMServiceOperator
                         extractor = lastTurn.ResolvedEntity with { IsPronoun = false };
                 }
                 var llmPrompt = finalQuery;
-                while (!validate)
+                // ─── LLM Cache Check through Vector ───────────────────────────────────────
+                var cached = await cacheService.GetCacheSearchAsync(refinedQuery: refinedPrompt, normalizedQuery: Normalize(refinedPrompt), memory.GetCurrentChain());
+                if (cached != null)
                 {
-                    if (count == 3)
-                    {
-                        Helper.LogMessage("Validation Failed after 3 attempts. Returning last result.");
-                        validate = true;
-                        IsFailedQuery = true;
-                        result.SQL = llmPrompt;
-                        result.Type = ResponseType.ERROR;
-                        continue;
-                    }
-                    // ─── LLM Cache Check through Vector ───────────────────────────────────────
-                    var cached = await cacheService.GetCacheSearchAsync(refinedQuery: refinedPrompt, normalizedQuery: Normalize(refinedPrompt), memory.GetCurrentChain());
-                    if (cached != null)
-                    {
-                        Helper.LogMessage($"[Cache] HIT ✅ ({cached.FinalScore:P0} similar)");
-                        Helper.LogMessage($"SQL:\n{cached.Record.GeneratedSQL}");
-                        result.SQL = cached.Record.GeneratedSQL;
-                        result.Type = ResponseType.SQL;
-                        validate = true;
+                    Helper.LogMessage($"[Cache] HIT ✅ ({cached.FinalScore:P0} similar)");
+                    Helper.LogMessage($"SQL:\n{cached.Record.GeneratedSQL}");
+                    result.SQL = cached.Record.GeneratedSQL;
+                    result.Type = ResponseType.SQL;
+                    memory.UpdateContext(
+                        userInput: originalPrompt,
+                        refinedQuery: refinedPrompt,
+                        generatedSQL: result.SQL,
+                        entity: extractor.Name,
+                        entityName: extractor.Name
+                    );
+                    return result;
+                }
+                else
+                {
+                    var validate = false;
+                    var count = 1;
+                    var IsFailedQuery = false;
+                    Helper.LogMessage("No Schemantic Cache Found");
+                    Helper.LogMessage("Vector Processing...");
+                    //  Call Qdrant with refined prompt to get relevant schema and context
+                    var output = await qdrantService.SearchAsync(llmPrompt, embeddingService);
 
-
-                        memory.UpdateContext(
-                            userInput: originalPrompt,
-                            refinedQuery: refinedPrompt,
-                            generatedSQL: result.SQL,
-                            entity: extractor.Name,
-                            entityName: extractor.Name
-                        );
-                    }
-                    else
+                    while (!validate)
                     {
-
-                        Helper.LogMessage("No Schemantic Cache Found");
-                        Helper.LogMessage("Vector Processing...");
-                        var output = await qdrantService.SearchAsync(llmPrompt, embeddingService);
-                        Helper.LogMessage("LLM Processing...");
+                        if (count == 4)
+                        {
+                            Helper.LogMessage("Validation Failed after 3 attempts. Returning last result.");
+                            validate = true;
+                            IsFailedQuery = true;
+                            result.SQL = llmPrompt;
+                            result.Type = ResponseType.ERROR;
+                            continue;
+                        }
+                        Helper.LogMessage("LLM Processing... Try: " + count.ToString());
+                        // Call LLM service to get SQL query
                         result.SQL = await llmService.AskAsync(output.Schema, llmPrompt, memory.GetLatestTurn());
 
-                        // Validaete the result before saving to cache
+                        // Validate the result before saving to cache
                         var validator = new DBValidator(fullSchema, tenant.TenantDB);
                         var pipeline = await validator.ValidateQuery(result.SQL, "", memory.GetLatestTurn());
 
                         Helper.LogMessage("\nLLM Response:");
                         Helper.LogMessage(result.SQL);
-
-                        Helper.LogMessage("Saving Result in Cache");
                         if (pipeline.FinalState == SqlValidator.Models.TurnState.RefinedQuery)
                         {
-
+                            // Save successful query and update memory context (STM)
                             memory.UpdateContext(
                                 userInput: originalPrompt,
                                 refinedQuery: refinedPrompt,
@@ -226,7 +224,8 @@ namespace AIQueryPlatform.LLMServiceOperator
                                 entity: extractor.Name,
                                 entityName: extractor.Name
                             );
-                            // Step 4: Save to cache for next time
+
+                            // Save to cache for next time (DB)
                             await cacheService.SaveToCacheAsync(
                                 memory.GetLatestTurn(),
                                 memory.GetCurrentChain(),
@@ -237,16 +236,14 @@ namespace AIQueryPlatform.LLMServiceOperator
                         else
                         {
                             validate = false;
-                            if (count == 0)
-                            {
-                                llmPrompt = BuildLLMPrompt(memory.GetHistory(HistoryMode.CurrentChainOnly, includeSQL: false), refinedPrompt);
-                            }
-                            llmPrompt += "\n[VALIDATION FEEDBACK]\n" + pipeline.FixHint;
-                            llmPrompt += "\n[LAST SQL]\n" + result.SQL + "\n" + "[END SQL]";
+                            llmPrompt = BuildSqlRepairPrompt(
+                                fixHints: pipeline.FixHint ?? "No specific hints provided.",
+                                dbSchema: output.Schema,
+                                userPrompt: refinedPrompt,
+                                lastSql: result.SQL);
                         }
+                        count++;
                     }
-                    count++;
-
                 }
             }
             catch (Exception ex)
@@ -278,6 +275,51 @@ namespace AIQueryPlatform.LLMServiceOperator
             sb.AppendLine("[END REQUEST]");
 
             return sb.ToString();
+        }
+
+        public static string BuildSqlRepairPrompt(
+        string fixHints,
+        string dbSchema,
+        string userPrompt,
+        string lastSql)
+        {
+            var prompt = new StringBuilder();
+
+            prompt.AppendLine("You are an expert SQL Server query fixer.");
+            prompt.AppendLine();
+            prompt.AppendLine("TASK:");
+            prompt.AppendLine("Fix the SQL using validation feedback.");
+            prompt.AppendLine();
+            prompt.AppendLine("STRICT RULES:");
+            prompt.AppendLine("- Return ONLY valid SQL Server SQL");
+            prompt.AppendLine("- Do NOT include explanation");
+            prompt.AppendLine("- Do NOT include comments");
+            prompt.AppendLine("- Do NOT include markdown");
+            prompt.AppendLine("- Keep original query intent");
+            prompt.AppendLine("- Change only invalid parts");
+            prompt.AppendLine("- Preserve aliases where possible");
+            prompt.AppendLine("- Use ONLY schema listed below");
+            prompt.AppendLine("- Never invent columns or tables");
+            prompt.AppendLine("- Keep SELECT columns unless invalid");
+            prompt.AppendLine("- Prefer minimal changes");
+            prompt.AppendLine();
+            prompt.AppendLine("USER QUESTION:");
+            prompt.AppendLine(userPrompt);
+            prompt.AppendLine();
+            prompt.AppendLine("SCHEMA:");
+            prompt.AppendLine("----------------");
+            prompt.AppendLine(dbSchema);
+            prompt.AppendLine("----------------");
+            prompt.AppendLine();
+            prompt.AppendLine("VALIDATION ERRORS:");
+            prompt.AppendLine(fixHints);
+            prompt.AppendLine();
+            prompt.AppendLine("LAST SQL:");
+            prompt.AppendLine(lastSql);
+            prompt.AppendLine();
+            prompt.AppendLine("Return corrected SQL only.");
+
+            return prompt.ToString();
         }
 
         private string Normalize(string query)
