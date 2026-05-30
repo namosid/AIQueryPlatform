@@ -13,6 +13,7 @@ namespace AIQueryPlatform.LLMServiceOperator.Models
         public string TenantId { get; set; }
         public string SchemaFile { get; set; }
         public string ConversationID { get; set; }
+        public string MappingFile { get; set; }
 
     }
 }

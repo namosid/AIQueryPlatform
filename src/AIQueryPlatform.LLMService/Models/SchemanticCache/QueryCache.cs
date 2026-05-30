@@ -11,6 +11,8 @@ namespace AIQueryPlatform.LLMServiceOperator.Models.SchemanticCache
         public QueryCacheRecord Record { get; set; }
         public float FinalScore { get; set; }
         public MatchType MatchType { get; set; }
+        public string ExecutableSQL { get; set; }
+        public Dictionary<string, string> ResolvedParams { get; set; } = new();
     }
 
     public class ScoredCandidate

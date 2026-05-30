@@ -25,4 +25,5 @@ public class Tenant
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
     public string? SchemaFile { get; set; }
+    public string? MappingFile { get; set; }
 }

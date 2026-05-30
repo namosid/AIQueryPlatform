@@ -20,13 +20,13 @@ namespace AIQueryPlatform.LLMServiceOperator.Services
             _options = options.Value;
         }
 
-        public async Task<string> AskAsync(string schemaJson, string prompt, MemoryTurn turn)
+        public async Task<string> AskAsync(SearchOutput entityOutput, string prompt, MemoryTurn turn)
         {
             var engine = new PromptRuleEngine();
             var rules = engine.BuildRules(prompt);
             var outputEngine = new OutputRuleEngine();
             var outputRules = outputEngine.BuildOutputRules(prompt);
-
+            var enumContext = entityOutput.MappingService.BuildEnumContext(entityOutput.Entities);
             var fullPrompt = $@"
                 You are an expert SQL Server database architect.
 
@@ -35,17 +35,13 @@ namespace AIQueryPlatform.LLMServiceOperator.Services
                 {outputRules}
                 Schema:
                 ----------------
-                {schemaJson}
+                {entityOutput.Schema}
                 ----------------
-
+                 Column allowed values (use EXACTLY these values in WHERE clauses):
+                {enumContext}
                 User Question:
                 {prompt}
                 ";
-
-            //if (turn != null && !String.IsNullOrEmpty(turn.GeneratedSQL))
-            //{
-            //    fullPrompt += "\n[PreviousSQL]:\n" + turn.GeneratedSQL;
-            //}
 
             Console.WriteLine("Full Prompt");
             Console.WriteLine(fullPrompt);

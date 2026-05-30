@@ -98,7 +98,7 @@ public class TenantService : ITenantService
             await connection.OpenAsync();
 
             var query = @"
-                SELECT TenantId, Name, ApiKey, ConnectionString, LogoUrl, ThemeColor, IsActive, EnableInsights,SchemaFile
+                SELECT TenantId, Name, ApiKey, ConnectionString, LogoUrl, ThemeColor, IsActive, EnableInsights,SchemaFile,MappingFile
                 FROM Tenants
                 WHERE ApiKey = @ApiKey";
 
@@ -119,7 +119,8 @@ public class TenantService : ITenantService
                     ThemeColor = reader.IsDBNull(5) ? null : reader.GetString(5),
                     IsActive = reader.GetBoolean(6),
                     EnableInsights = reader.GetBoolean(7),
-                    SchemaFile = reader.IsDBNull(8) ? null : reader.GetString(8)
+                    SchemaFile = reader.IsDBNull(8) ? null : reader.GetString(8),
+                    MappingFile = reader.IsDBNull(9) ? null : reader.GetString(9)
                 };
 
                 _cache.Set(cacheKey, tenant, CacheDuration);
@@ -158,7 +159,7 @@ public class TenantService : ITenantService
             await connection.OpenAsync();
 
             var query = @"
-                SELECT TenantId, Name, ApiKey, ConnectionString, LogoUrl, ThemeColor, IsActive, EnableInsights,SchemaFile
+                SELECT TenantId, Name, ApiKey, ConnectionString, LogoUrl, ThemeColor, IsActive, EnableInsights,SchemaFile,MappingFile
                 FROM Tenants
                 WHERE IsActive = 1
                 ORDER BY Name";
@@ -179,8 +180,9 @@ public class TenantService : ITenantService
                     LogoUrl = reader.IsDBNull(4) ? null : reader.GetString(4),
                     ThemeColor = reader.IsDBNull(5) ? null : reader.GetString(5),
                     IsActive = reader.GetBoolean(6),
-                    EnableInsights = reader.GetBoolean(7),
-                    SchemaFile = reader.IsDBNull(8) ? null : reader.GetString(8)
+                    EnableInsights = reader.GetBoolean(7),                                  
+                    SchemaFile = reader.IsDBNull(8) ? null : reader.GetString(8),
+                    MappingFile = reader.IsDBNull(9) ? null : reader.GetString(9)
                 };
 
                 tenants.Add(tenant);

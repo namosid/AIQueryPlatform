@@ -13,6 +13,7 @@ namespace AIQueryPlatform.LLMServiceOperator.Models
         public int CacheId { get; set; }
         // ── Core Question ─────────────────────────────────────────────
         public string QuestionText { get; set; }
+        public string QuestionTemplate { get; set; }
         public float[] QuestionVector { get; set; }
 
         // ── SQL ───────────────────────────────────────────────────────
@@ -23,7 +24,7 @@ namespace AIQueryPlatform.LLMServiceOperator.Models
         // ── Classification ────────────────────────────────────────────
         public QueryType QueryType { get; set; }
         public string DetectedEntities { get; set; }  // JSON
-        public string? ParameterTypes { get; set; }  // JSON
+        public string? ExtractedParameters { get; set; }  // JSON
 
         // ── Fields Tracking ───────────────────────────────────────────
         public string? IncrementalFields { get; set; }  // JSON array
@@ -44,6 +45,7 @@ namespace AIQueryPlatform.LLMServiceOperator.Models
     {
         public int CacheID { get; set; }
         public string QuestionText { get; set; }
+        public string QuestionTemplate { get; set; }
         public string QuestionVector { get; set; }  // ← string from DB
         public string NormalizedQuestion { get; set; }
         public string NormalizedVector { get; set; }  // ← string from DB
@@ -52,7 +54,7 @@ namespace AIQueryPlatform.LLMServiceOperator.Models
         public string? SQLTemplate { get; set; }
         public string QueryTypes { get; set; }
         public string DetectedEntities { get; set; }
-        public string? ParameterTypes { get; set; }
+        public string? ExtractedParameters { get; set; }
         public string? IncrementalFields { get; set; }
         public string? RequiredPriorFields { get; set; }
         public int TurnLevel { get; set; }

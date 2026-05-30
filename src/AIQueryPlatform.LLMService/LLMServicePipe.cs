@@ -32,6 +32,7 @@ namespace AIQueryPlatform.LLMServiceOperator
         private readonly string schoolDBConnectionString;
         private ILlmService llmService;
         private FileSchemaService fileService;
+        private readonly string relativePath;
 
 
         public LLMServicePipe(IConfiguration configuration, ILlmService lservice)
@@ -52,6 +53,7 @@ namespace AIQueryPlatform.LLMServiceOperator
             qdrantAPIKey = configuration["QdrantData:APIKey"];
             llmService = lservice;
             fileService = new FileSchemaService(configuration);
+            relativePath = Convert.ToString(configuration["SchemaSettings:SchemaPath"]);
 
         }
         public async Task<LLMResponse> ProcessQuery(string userPrompt, TenantData tenant)
@@ -67,7 +69,9 @@ namespace AIQueryPlatform.LLMServiceOperator
                     return result;
                 }
                 var embeddingService = new EmbeddingService(apiKeyTextModel, endPointTextModel, deploymentNameTextModel);
-                var qdrantService = new QdrantService(fullSchema, qdrantURL, qdrantAPIKey);
+                
+                var mappingPath = Path.Combine(relativePath, "Mapping//" + tenant.MappingFile + ".json");
+                var qdrantService = new QdrantService(fullSchema, qdrantURL, qdrantAPIKey, mappingPath);
                 await qdrantService.InitAsync(fullSchema, embeddingService);
 
                 var cacheService = new SemanticCacheService(connectionString, embeddingService);
@@ -171,8 +175,8 @@ namespace AIQueryPlatform.LLMServiceOperator
                 if (cached != null)
                 {
                     Helper.LogMessage($"[Cache] HIT ✅ ({cached.FinalScore:P0} similar)");
-                    Helper.LogMessage($"SQL:\n{cached.Record.GeneratedSQL}");
-                    result.SQL = cached.Record.GeneratedSQL;
+                    Helper.LogMessage($"SQL:\n{cached.ExecutableSQL}");
+                    result.SQL = cached.ExecutableSQL;
                     result.Type = ResponseType.SQL;
                     memory.UpdateContext(
                         userInput: originalPrompt,
@@ -195,7 +199,7 @@ namespace AIQueryPlatform.LLMServiceOperator
 
                     while (!validate)
                     {
-                        if (count == 4)
+                        if (count == 3)
                         {
                             Helper.LogMessage("Validation Failed after 3 attempts. Returning last result.");
                             validate = true;
@@ -206,7 +210,7 @@ namespace AIQueryPlatform.LLMServiceOperator
                         }
                         Helper.LogMessage("LLM Processing... Try: " + count.ToString());
                         // Call LLM service to get SQL query
-                        result.SQL = await llmService.AskAsync(output.Schema, llmPrompt, memory.GetLatestTurn());
+                        result.SQL = await llmService.AskAsync(output, llmPrompt, memory.GetLatestTurn());
 
                         // Validate the result before saving to cache
                         var validator = new DBValidator(fullSchema, tenant.TenantDB);

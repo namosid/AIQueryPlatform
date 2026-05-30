@@ -1,0 +1,700 @@
+{
+  "EntityTableMappings": [
+    {
+      "EntityType": "Student",
+      "PrimaryTable": "Students",
+      "IdentifierColumns": [ "StudentID", "AdmissionNumber", "RollNumber", "AadharNumber" ],
+      "DisplayColumns": [ "FirstName", "LastName", "Gender", "DateOfBirth", "BloodGroup", "AdmissionDate", "IsActive" ],
+      "JoinTables": [
+        {
+          "Table": "StudentEnrollments",
+          "JoinOn": "Students.StudentID = StudentEnrollments.StudentID"
+        },
+        {
+          "Table": "StudentParents",
+          "JoinOn": "Students.StudentID = StudentParents.StudentID"
+        },
+        {
+          "Table": "Sections",
+          "JoinOn": "Students.CurrentSectionID = Sections.SectionID"
+        },
+        {
+          "Table": "Classes",
+          "JoinOn": "Sections.ClassID = Classes.ClassID"
+        },
+        {
+          "Table": "StudentCategories",
+          "JoinOn": "Students.CategoryID = StudentCategories.CategoryID"
+        },
+        {
+          "Table": "Religions",
+          "JoinOn": "Students.ReligionID = Religions.ReligionID"
+        },
+        {
+          "Table": "Nationalities",
+          "JoinOn": "Students.NationalityID = Nationalities.NationalityID"
+        }
+      ],
+      "ColumnEnumValues": {
+        "MotherTongue": [ "Hindi", "English", "Punjabhi", "Telgu", "Tamil" ],
+        "Gender": [ "Male", "Female", "Other" ],
+        "BloodGroup": [ "A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-" ]
+      }
+    },
+    {
+      "EntityType": "Staff",
+      "PrimaryTable": "Staff",
+      "IdentifierColumns": [ "StaffID", "EmployeeCode", "AadharNumber" ],
+      "DisplayColumns": [ "FirstName", "LastName", "Gender", "Designation", "StaffType", "JoiningDate", "IsActive" ],
+      "JoinTables": [
+        {
+          "Table": "Departments",
+          "JoinOn": "Staff.DepartmentID = Departments.DepartmentID"
+        },
+        {
+          "Table": "StaffDocuments",
+          "JoinOn": "Staff.StaffID = StaffDocuments.StaffID"
+        },
+        {
+          "Table": "StaffAttendance",
+          "JoinOn": "Staff.StaffID = StaffAttendance.StaffID"
+        },
+        {
+          "Table": "StaffLeave",
+          "JoinOn": "Staff.StaffID = StaffLeave.StaffID"
+        },
+        {
+          "Table": "StaffSalary",
+          "JoinOn": "Staff.StaffID = StaffSalary.StaffID"
+        }
+      ],
+      "ColumnEnumValues": {
+        "StaffType": [ "Teaching", "NonTeaching", "Administrative", "Support" ],
+        "Gender": [ "Male", "Female", "Other" ],
+        "BloodGroup": [ "A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-" ]
+      }
+    },
+    {
+      "EntityType": "Class",
+      "PrimaryTable": "Classes",
+      "IdentifierColumns": [ "ClassID", "ClassName", "ClassNumeric", "Stream" ],
+      "DisplayColumns": [ "ClassName", "ClassNumeric", "Stream", "IsActive" ],
+      "JoinTables": [
+        {
+          "Table": "Sections",
+          "JoinOn": "Classes.ClassID = Sections.ClassID"
+        },
+        {
+          "Table": "AcademicYears",
+          "JoinOn": "Sections.AcademicYearID = AcademicYears.AcademicYearID"
+        },
+        {
+          "Table": "ClassSubjects",
+          "JoinOn": "Sections.SectionID = ClassSubjects.SectionID"
+        }
+      ]
+    },
+    {
+      "EntityType": "Section",
+      "PrimaryTable": "Sections",
+      "IdentifierColumns": [ "SectionID", "SectionName" ],
+      "DisplayColumns": [ "SectionName", "RoomNumber", "Capacity" ],
+      "JoinTables": [
+        {
+          "Table": "Classes",
+          "JoinOn": "Sections.ClassID = Classes.ClassID"
+        },
+        {
+          "Table": "AcademicYears",
+          "JoinOn": "Sections.AcademicYearID = AcademicYears.AcademicYearID"
+        },
+        {
+          "Table": "Staff",
+          "JoinOn": "Sections.ClassTeacherID = Staff.StaffID"
+        }
+      ]
+    },
+    {
+      "EntityType": "Subject",
+      "PrimaryTable": "Subjects",
+      "IdentifierColumns": [ "SubjectID", "SubjectCode", "SubjectName" ],
+      "DisplayColumns": [ "SubjectName", "SubjectCode", "SubjectType", "IsActive" ],
+      "JoinTables": [
+        {
+          "Table": "ClassSubjects",
+          "JoinOn": "Subjects.SubjectID = ClassSubjects.SubjectID"
+        },
+        {
+          "Table": "Departments",
+          "JoinOn": "Subjects.DepartmentID = Departments.DepartmentID"
+        },
+        {
+          "Table": "Sections",
+          "JoinOn": "ClassSubjects.SectionID = Sections.SectionID"
+        }
+      ]
+    },
+    {
+      "EntityType": "Exam",
+      "PrimaryTable": "Examinations",
+      "IdentifierColumns": [ "ExamID", "HallNumber" ],
+      "DisplayColumns": [ "ExamDate", "StartTime", "EndTime", "MaxMarks", "PassMarks", "HallNumber" ],
+      "JoinTables": [
+        {
+          "Table": "ExamTypes",
+          "JoinOn": "Examinations.ExamTypeID = ExamTypes.ExamTypeID"
+        },
+        {
+          "Table": "ExamResults",
+          "JoinOn": "Examinations.ExamID = ExamResults.ExamID"
+        },
+        {
+          "Table": "Subjects",
+          "JoinOn": "Examinations.SubjectID = Subjects.SubjectID"
+        },
+        {
+          "Table": "Sections",
+          "JoinOn": "Examinations.SectionID = Sections.SectionID"
+        },
+        {
+          "Table": "ReportCards",
+          "JoinOn": "Examinations.ExamTypeID = ReportCards.ExamTypeID"
+        }
+      ]
+    },
+    {
+      "EntityType": "ExamType",
+      "PrimaryTable": "ExamTypes",
+      "IdentifierColumns": [ "ExamTypeID", "ExamTypeName" ],
+      "DisplayColumns": [ "ExamTypeName", "Weightage" ],
+      "JoinTables": [
+        {
+          "Table": "Examinations",
+          "JoinOn": "ExamTypes.ExamTypeID = Examinations.ExamTypeID"
+        },
+        {
+          "Table": "AcademicYears",
+          "JoinOn": "ExamTypes.AcademicYearID = AcademicYears.AcademicYearID"
+        },
+        {
+          "Table": "ReportCards",
+          "JoinOn": "ExamTypes.ExamTypeID = ReportCards.ExamTypeID"
+        }
+      ]
+    },
+    {
+      "EntityType": "ExamResult",
+      "PrimaryTable": "ExamResults",
+      "IdentifierColumns": [ "ResultID" ],
+      "DisplayColumns": [ "MarksObtained", "IsAbsent", "Grade", "Remarks", "IsVerified" ],
+      "JoinTables": [
+        {
+          "Table": "Examinations",
+          "JoinOn": "ExamResults.ExamID = Examinations.ExamID"
+        },
+        {
+          "Table": "Students",
+          "JoinOn": "ExamResults.StudentID = Students.StudentID"
+        },
+        {
+          "Table": "ExamTypes",
+          "JoinOn": "Examinations.ExamTypeID = ExamTypes.ExamTypeID"
+        },
+        {
+          "Table": "Subjects",
+          "JoinOn": "Examinations.SubjectID = Subjects.SubjectID"
+        }
+      ]
+    },
+    {
+      "EntityType": "ReportCard",
+      "PrimaryTable": "ReportCards",
+      "IdentifierColumns": [ "ReportCardID" ],
+      "DisplayColumns": [ "TotalMarks", "ObtainedMarks", "Percentage", "Rank", "Grade", "Result", "Attendance" ],
+      "JoinTables": [
+        {
+          "Table": "Students",
+          "JoinOn": "ReportCards.StudentID = Students.StudentID"
+        },
+        {
+          "Table": "AcademicYears",
+          "JoinOn": "ReportCards.AcademicYearID = AcademicYears.AcademicYearID"
+        },
+        {
+          "Table": "ExamTypes",
+          "JoinOn": "ReportCards.ExamTypeID = ExamTypes.ExamTypeID"
+        }
+      ]
+    },
+    {
+      "EntityType": "AcademicYear",
+      "PrimaryTable": "AcademicYears",
+      "IdentifierColumns": [ "AcademicYearID", "YearLabel" ],
+      "DisplayColumns": [ "YearLabel", "StartDate", "EndDate", "IsCurrent" ],
+      "JoinTables": [
+        {
+          "Table": "Sections",
+          "JoinOn": "AcademicYears.AcademicYearID = Sections.AcademicYearID"
+        },
+        {
+          "Table": "StudentEnrollments",
+          "JoinOn": "AcademicYears.AcademicYearID = StudentEnrollments.AcademicYearID"
+        },
+        {
+          "Table": "ExamTypes",
+          "JoinOn": "AcademicYears.AcademicYearID = ExamTypes.AcademicYearID"
+        }
+      ]
+    },
+    {
+      "EntityType": "Attendance",
+      "PrimaryTable": "StudentAttendance",
+      "IdentifierColumns": [ "AttendanceID" ],
+      "DisplayColumns": [ "AttendanceDate", "PeriodNumber", "Status", "Remarks" ],
+      "JoinTables": [
+        {
+          "Table": "Students",
+          "JoinOn": "StudentAttendance.StudentID = Students.StudentID"
+        },
+        {
+          "Table": "Sections",
+          "JoinOn": "StudentAttendance.SectionID = Sections.SectionID"
+        },
+        {
+          "Table": "Staff",
+          "JoinOn": "StudentAttendance.MarkedBy = Staff.StaffID"
+        }
+      ],
+      "ColumnEnumValues": {
+        "Status": [ "Absent", "Present" ]
+      }
+    },
+    {
+      "EntityType": "StaffAttendance",
+      "PrimaryTable": "StaffAttendance",
+      "IdentifierColumns": [ "AttendanceID" ],
+      "DisplayColumns": [ "AttendanceDate", "Status", "InTime", "OutTime", "Remarks" ],
+      "JoinTables": [
+        {
+          "Table": "Staff",
+          "JoinOn": "StaffAttendance.StaffID = Staff.StaffID"
+        }
+      ],
+      "ColumnEnumValues": {
+        "Status": [ "Absent", "Present" ]
+      }
+    },
+    {
+      "EntityType": "Fee",
+      "PrimaryTable": "FeeInvoices",
+      "IdentifierColumns": [ "InvoiceID", "InvoiceNumber" ],
+      "DisplayColumns": [ "InvoiceDate", "DueDate", "TotalAmount", "Discount", "LateFine", "NetAmount", "Status" ],
+      "JoinTables": [
+        {
+          "Table": "Students",
+          "JoinOn": "FeeInvoices.StudentID = Students.StudentID"
+        },
+        {
+          "Table": "FeePayments",
+          "JoinOn": "FeeInvoices.InvoiceID = FeePayments.InvoiceID"
+        },
+        {
+          "Table": "AcademicYears",
+          "JoinOn": "FeeInvoices.AcademicYearID = AcademicYears.AcademicYearID"
+        }
+      ]
+    },
+    {
+      "EntityType": "FeePayment",
+      "PrimaryTable": "FeePayments",
+      "IdentifierColumns": [ "PaymentID", "ReceiptNumber", "TransactionRef" ],
+      "DisplayColumns": [ "PaymentDate", "AmountPaid", "PaymentMode", "TransactionRef", "ReceiptNumber" ],
+      "JoinTables": [
+        {
+          "Table": "FeeInvoices",
+          "JoinOn": "FeePayments.InvoiceID = FeeInvoices.InvoiceID"
+        },
+        {
+          "Table": "Students",
+          "JoinOn": "FeeInvoices.StudentID = Students.StudentID"
+        },
+        {
+          "Table": "Staff",
+          "JoinOn": "FeePayments.CollectedBy = Staff.StaffID"
+        }
+      ]
+    },
+    {
+      "EntityType": "FeeCategory",
+      "PrimaryTable": "FeeCategories",
+      "IdentifierColumns": [ "FeeCategoryID", "CategoryName" ],
+      "DisplayColumns": [ "CategoryName", "Description", "IsRefundable", "IsActive" ],
+      "JoinTables": [
+        {
+          "Table": "FeeStructure",
+          "JoinOn": "FeeCategories.FeeCategoryID = FeeStructure.FeeCategoryID"
+        }
+      ]
+    },
+    {
+      "EntityType": "FeeStructure",
+      "PrimaryTable": "FeeStructure",
+      "IdentifierColumns": [ "FeeStructureID" ],
+      "DisplayColumns": [ "Amount", "Frequency", "DueDay", "LateFinePerDay" ],
+      "JoinTables": [
+        {
+          "Table": "FeeCategories",
+          "JoinOn": "FeeStructure.FeeCategoryID = FeeCategories.FeeCategoryID"
+        },
+        {
+          "Table": "Classes",
+          "JoinOn": "FeeStructure.ClassID = Classes.ClassID"
+        },
+        {
+          "Table": "AcademicYears",
+          "JoinOn": "FeeStructure.AcademicYearID = AcademicYears.AcademicYearID"
+        }
+      ]
+    },
+    {
+      "EntityType": "Department",
+      "PrimaryTable": "Departments",
+      "IdentifierColumns": [ "DepartmentID", "DeptName", "DeptCode" ],
+      "DisplayColumns": [ "DeptName", "DeptCode", "IsActive" ],
+      "JoinTables": [
+        {
+          "Table": "Staff",
+          "JoinOn": "Departments.DepartmentID = Staff.DepartmentID"
+        },
+        {
+          "Table": "Subjects",
+          "JoinOn": "Departments.DepartmentID = Subjects.DepartmentID"
+        }
+      ]
+    },
+    {
+      "EntityType": "Hostel",
+      "PrimaryTable": "Hostels",
+      "IdentifierColumns": [ "HostelID", "HostelName" ],
+      "DisplayColumns": [ "HostelName", "HostelType", "Capacity", "Address", "IsActive" ],
+      "JoinTables": [
+        {
+          "Table": "HostelRooms",
+          "JoinOn": "Hostels.HostelID = HostelRooms.HostelID"
+        },
+        {
+          "Table": "Staff",
+          "JoinOn": "Hostels.WardenID = Staff.StaffID"
+        }
+      ]
+    },
+    {
+      "EntityType": "HostelRoom",
+      "PrimaryTable": "HostelRooms",
+      "IdentifierColumns": [ "RoomID", "RoomNumber" ],
+      "DisplayColumns": [ "RoomNumber", "RoomType", "Capacity", "Floor", "IsAvailable" ],
+      "JoinTables": [
+        {
+          "Table": "Hostels",
+          "JoinOn": "HostelRooms.HostelID = Hostels.HostelID"
+        },
+        {
+          "Table": "HostelAllocations",
+          "JoinOn": "HostelRooms.RoomID = HostelAllocations.RoomID"
+        }
+      ]
+    },
+    {
+      "EntityType": "HostelAllocation",
+      "PrimaryTable": "HostelAllocations",
+      "IdentifierColumns": [ "AllocationID" ],
+      "DisplayColumns": [ "AllocationDate", "VacatingDate", "IsActive" ],
+      "JoinTables": [
+        {
+          "Table": "HostelRooms",
+          "JoinOn": "HostelAllocations.RoomID = HostelRooms.RoomID"
+        },
+        {
+          "Table": "Students",
+          "JoinOn": "HostelAllocations.StudentID = Students.StudentID"
+        },
+        {
+          "Table": "Hostels",
+          "JoinOn": "HostelRooms.HostelID = Hostels.HostelID"
+        },
+        {
+          "Table": "AcademicYears",
+          "JoinOn": "HostelAllocations.AcademicYearID = AcademicYears.AcademicYearID"
+        }
+      ]
+    },
+    {
+      "EntityType": "Transport",
+      "PrimaryTable": "Routes",
+      "IdentifierColumns": [ "RouteID", "RouteName" ],
+      "DisplayColumns": [ "RouteName", "StartPoint", "EndPoint", "MorningDepartureTime", "EveningDepartureTime", "IsActive" ],
+      "JoinTables": [
+        {
+          "Table": "Vehicles",
+          "JoinOn": "Routes.VehicleID = Vehicles.VehicleID"
+        },
+        {
+          "Table": "RouteStops",
+          "JoinOn": "Routes.RouteID = RouteStops.RouteID"
+        },
+        {
+          "Table": "StudentTransport",          
+          "JoinOn": "Routes.RouteID = StudentTransport.RouteID"
+        }
+      ]
+    },
+    {
+      "EntityType": "Vehicle",
+      "PrimaryTable": "Vehicles",
+      "IdentifierColumns": [ "VehicleID", "VehicleNumber", "GPSTrackerID" ],
+      "DisplayColumns": [ "VehicleNumber", "VehicleType", "Model", "Capacity", "InsuranceExpiry", "FitnessExpiry", "IsActive" ],
+      "JoinTables": [
+        {
+          "Table": "Routes",
+          "JoinOn": "Vehicles.VehicleID = Routes.VehicleID"
+        },
+        {
+          "Table": "Staff",
+          "JoinOn": "Vehicles.DriverID = Staff.StaffID"
+        }
+      ],
+      "ColumnEnumValues": {
+        "VehicleType": [ "Bus", "Van" ],
+        "Model": [ "Tata", "Ashok Leyland" ]
+
+      }
+    },
+    {
+      "EntityType": "Parent",
+      "PrimaryTable": "StudentParents",
+      "IdentifierColumns": [ "ParentID", "AadharNumber" ],
+      "DisplayColumns": [ "Name", "Relation", "Occupation", "Education", "Phone", "Email", "IsPrimary" ],
+      "JoinTables": [
+        {
+          "Table": "Students",
+          "JoinOn": "StudentParents.StudentID = Students.StudentID"
+        }
+      ]
+    },
+    {
+      "EntityType": "Timetable",
+      "PrimaryTable": "Timetable",
+      "IdentifierColumns": [ "TimetableID" ],
+      "DisplayColumns": [ "DayOfWeek", "PeriodNumber", "StartTime", "EndTime", "RoomNumber" ],
+      "JoinTables": [
+        {
+          "Table": "Sections",
+          "JoinOn": "Timetable.SectionID = Sections.SectionID"
+        },
+        {
+          "Table": "Subjects",
+          "JoinOn": "Timetable.SubjectID = Subjects.SubjectID"
+        },
+        {
+          "Table": "Staff",
+          "JoinOn": "Timetable.StaffID = Staff.StaffID"
+        },
+        {
+          "Table": "AcademicYears",
+          "JoinOn": "Timetable.AcademicYearID = AcademicYears.AcademicYearID"
+        }
+      ]
+    },
+    {
+      "EntityType": "Homework",
+      "PrimaryTable": "HomeworkAssignments",
+      "IdentifierColumns": [ "HomeworkID", "Title" ],
+      "DisplayColumns": [ "Title", "AssignedDate", "SubmissionDate", "MaxMarks" ],
+      "JoinTables": [
+        {
+          "Table": "Subjects",
+          "JoinOn": "HomeworkAssignments.SubjectID = Subjects.SubjectID"
+        },
+        {
+          "Table": "Sections",
+          "JoinOn": "HomeworkAssignments.SectionID = Sections.SectionID"
+        },
+        {
+          "Table": "Staff",
+          "JoinOn": "HomeworkAssignments.StaffID = Staff.StaffID"
+        },
+        {
+          "Table": "HomeworkSubmissions",
+          "JoinOn": "HomeworkAssignments.HomeworkID = HomeworkSubmissions.HomeworkID"
+        }
+      ]
+    },
+    {
+      "EntityType": "HomeworkSubmission",
+      "PrimaryTable": "HomeworkSubmissions",
+      "IdentifierColumns": [ "SubmissionID" ],
+      "DisplayColumns": [ "SubmittedAt", "MarksObtained", "Remarks" ],
+      "JoinTables": [
+        {
+          "Table": "HomeworkAssignments",
+          "JoinOn": "HomeworkSubmissions.HomeworkID = HomeworkAssignments.HomeworkID"
+        },
+        {
+          "Table": "Students",
+          "JoinOn": "HomeworkSubmissions.StudentID = Students.StudentID"
+        },
+        {
+          "Table": "Staff",
+          "JoinOn": "HomeworkSubmissions.GradedBy = Staff.StaffID"
+        }
+      ]
+    },
+    {
+      "EntityType": "Scholarship",
+      "PrimaryTable": "Scholarships",
+      "IdentifierColumns": [ "ScholarshipID", "ScholarshipName" ],
+      "DisplayColumns": [ "ScholarshipName", "DiscountType", "DiscountValue", "IsActive" ],
+      "JoinTables": [
+        {
+          "Table": "StudentScholarships",
+          "JoinOn": "Scholarships.ScholarshipID = StudentScholarships.ScholarshipID"
+        },
+        {
+          "Table": "Students",
+          "JoinOn": "StudentScholarships.StudentID = Students.StudentID"
+        },
+        {
+          "Table": "AcademicYears",
+          "JoinOn": "Scholarships.AcademicYearID = AcademicYears.AcademicYearID"
+        }
+      ]
+    },
+    {
+      "EntityType": "StaffLeave",
+      "PrimaryTable": "StaffLeave",
+      "IdentifierColumns": [ "LeaveID" ],
+      "DisplayColumns": [ "LeaveType", "FromDate", "ToDate", "TotalDays", "Reason", "Status" ],
+      "JoinTables": [
+        {
+          "Table": "Staff",
+          "JoinOn": "StaffLeave.StaffID = Staff.StaffID"
+        },
+        {
+          "Table": "AcademicYears",
+          "JoinOn": "StaffLeave.AcademicYearID = AcademicYears.AcademicYearID"
+        }
+      ]
+    },
+    {
+      "EntityType": "StaffSalary",
+      "PrimaryTable": "StaffSalary",
+      "IdentifierColumns": [ "SalaryID" ],
+      "DisplayColumns": [ "Month", "Year", "BasicSalary", "HRA", "DA", "OtherAllowances", "PF", "TDS", "OtherDeductions", "NetSalary", "PaymentDate", "PaymentMode" ],
+      "JoinTables": [
+        {
+          "Table": "Staff",
+          "JoinOn": "StaffSalary.StaffID = Staff.StaffID"
+        }
+      ]
+    },
+    {
+      "EntityType": "Library",
+      "PrimaryTable": "Books",
+      "IdentifierColumns": [ "BookID", "ISBN", "Title" ],
+      "DisplayColumns": [ "Title", "Author", "Publisher", "Edition", "Category", "Language", "TotalCopies", "AvailableCopies", "ShelfLocation", "IsActive" ],
+      "JoinTables": [
+        {
+          "Table": "BookIssues",
+          "JoinOn": "Books.BookID = BookIssues.BookID"
+        },
+        {
+          "Table": "Subjects",
+          "JoinOn": "Books.SubjectID = Subjects.SubjectID"
+        }
+      ]
+    },
+    {
+      "EntityType": "BookIssue",
+      "PrimaryTable": "BookIssues",
+      "IdentifierColumns": [ "IssueID" ],
+      "DisplayColumns": [ "IssueDate", "DueDate", "ReturnDate", "FineAmount", "FinePaid", "BorrowerType" ],
+      "JoinTables": [
+        {
+          "Table": "Books",
+          "JoinOn": "BookIssues.BookID = Books.BookID"
+        },
+        {
+          "Table": "Staff",
+          "JoinOn": "BookIssues.IssuedBy = Staff.StaffID"
+        }
+      ]
+    },
+    {
+      "EntityType": "Asset",
+      "PrimaryTable": "Assets",
+      "IdentifierColumns": [ "AssetID", "AssetName" ],
+      "DisplayColumns": [ "AssetName", "AssetCategory", "PurchaseDate", "PurchasePrice", "Status", "Location" ],
+      "JoinTables": [
+        {
+          "Table": "MaintenanceLog",
+          "JoinOn": "Assets.AssetID = MaintenanceLog.AssetID"
+        },
+        {
+          "Table": "Staff",
+          "JoinOn": "Assets.AssignedTo = Staff.StaffID"
+        }
+      ]
+    },
+    {
+      "EntityType": "Announcement",
+      "PrimaryTable": "Announcements",
+      "IdentifierColumns": [ "AnnouncementID", "Title" ],
+      "DisplayColumns": [ "Title", "Content", "AudienceType", "Priority", "PublishDate", "ExpiryDate" ],
+      "JoinTables": [
+        {
+          "Table": "Staff",
+          "JoinOn": "Announcements.CreatedBy = Staff.StaffID"
+        }
+      ]
+    },
+    {
+      "EntityType": "Event",
+      "PrimaryTable": "Events",
+      "IdentifierColumns": [ "EventID", "EventName" ],
+      "DisplayColumns": [ "EventName", "EventDate", "StartTime", "EndTime", "Venue", "EventType", "IsHoliday" ],
+      "JoinTables": [
+        {
+          "Table": "Staff",
+          "JoinOn": "Events.OrganizedBy = Staff.StaffID"
+        }
+      ]
+    },
+    {
+      "EntityType": "Room",
+      "PrimaryTable": "Rooms",
+      "IdentifierColumns": [ "RoomID", "RoomNumber" ],
+      "DisplayColumns": [ "RoomNumber", "RoomType", "Floor", "Capacity", "HasProjector", "HasAC", "IsAvailable" ],
+      "JoinTables": []
+    },
+    {
+      "EntityType": "School",
+      "PrimaryTable": "Schools",
+      "IdentifierColumns": [ "SchoolID", "SchoolCode", "SchoolName" ],
+      "DisplayColumns": [ "SchoolName", "SchoolCode", "AffiliationBoard", "City", "State", "Phone", "Email", "IsActive" ],
+      "JoinTables": [
+        {
+          "Table": "AcademicYears",
+          "JoinOn": "Schools.SchoolID = AcademicYears.SchoolID"
+        },
+        {
+          "Table": "Classes",
+          "JoinOn": "Schools.SchoolID = Classes.SchoolID"
+        },
+        {
+          "Table": "Departments",
+          "JoinOn": "Schools.SchoolID = Departments.SchoolID"
+        }
+      ]
+    }
+  ]
+}

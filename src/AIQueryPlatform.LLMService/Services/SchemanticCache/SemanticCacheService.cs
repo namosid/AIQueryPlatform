@@ -29,250 +29,66 @@ namespace AIQueryPlatform.LLMServiceOperator.Services
             _connection = connection;
         }
 
-        public async Task<CacheResult?> GetAsync(string userQuestion)
-        {
-            // 1. Extract parameters + normalize question
-            var (normalized, parameters) = ParameterExtractor.Extract(userQuestion);
-
-            // 2. Embed NORMALIZED question (without actual values)
-            var normalizedVector = await _embeddingService.GetEmbeddingAsync(normalized);
-
-            // 3. Search cache using normalized vector
-            var cached = await LoadAllCacheAsync();
-            if (!cached.Any()) return null;
-
-            var best = cached
-                .Where(c => c.NormalizedVector != null)
-                .Select(c => (
-                    cache: c,
-                    similarity: CosineSimilarity(normalizedVector, c.NormalizedVector!)
-                ))
-                .OrderByDescending(x => x.similarity)
-                .First();
-
-            Console.WriteLine($"[Cache] Normalized match: '{best.cache.NormalizedQuestion}' | {best.similarity:F4}");
-
-            if (best.similarity >= SimilarityThreshold)
-            {
-                // 4. Inject NEW parameter values into cached SQL template
-                var finalSQL = InjectParameters(best.cache.SQLTemplate, parameters);
-
-                Console.WriteLine($"[Cache] HIT ✅ Template match — injected new values");
-                Console.WriteLine($"[Cache] Final SQL: {finalSQL}");
-
-                await UpdateHitCountAsync(best.cache.CacheID);
-
-                return new CacheResult
-                {
-                    SQL = finalSQL,
-                    OriginalQuestion = best.cache.NormalizedQuestion,
-                    Similarity = best.similarity
-                };
-            }
-
-            return null;
-        }
-
-        public async Task<CacheSearchResult?> GetCacheSearchAsync(string refinedQuery,string normalizedQuery,MemoryChain currentChain)
+        public async Task<CacheSearchResult?> GetCacheSearchAsync(string refinedQuery, string normalizedQuery, MemoryChain currentChain)
         {
             var search = new SemanticSearch(_db, _embeddingService);
             return await search.SearchCacheAsync(refinedQuery, normalizedQuery, currentChain);
         }
 
-        // ─── Save with normalized question + SQL template ─────────
-        public async Task SaveAsync(
-            string userQuestion,
-            string generatedSQL,
-            HashSet<string> detectedEntities)
-        {
-            var detector = new QueryIntentDetector();
-            var queryTypes = detector.Detect(userQuestion);
-
-            // 1. Extract parameters + normalize
-            var (normalized, parameters) = ParameterExtractor.Extract(userQuestion);
-
-            // 2. Replace values in SQL with placeholders → SQL template
-            var sqlTemplate = generatedSQL;
-            foreach (var p in parameters)
-                sqlTemplate = sqlTemplate.Replace(p.Value.ToString()!, p.Placeholder);
-
-            Console.WriteLine($"[Semantic Cache] SQL Template");
-
-            // 3. Embed normalized question
-            var questionVector = await _embeddingService.GetEmbeddingAsync(userQuestion);
-            var normalizedVector = await _embeddingService.GetEmbeddingAsync(normalized);
-
-            await _db.ExecuteAsync(@"
-        INSERT INTO QueryCache 
-            (QuestionText, QuestionVector, NormalizedQuestion, NormalizedVector,
-             GeneratedSQL, SQLTemplate, QueryTypes, DetectedEntities)
-        VALUES 
-            (@QuestionText, @QuestionVector, @NormalizedQuestion, @NormalizedVector,
-             @GeneratedSQL, @SQLTemplate, @QueryTypes, @DetectedEntities)",
-                new
-                {
-                    QuestionText = userQuestion,
-                    QuestionVector = JsonSerializer.Serialize(questionVector),
-                    NormalizedQuestion = normalized,
-                    NormalizedVector = JsonSerializer.Serialize(normalizedVector),
-                    GeneratedSQL = generatedSQL,
-                    SQLTemplate = sqlTemplate,
-                    QueryTypes = string.Join(",", queryTypes),
-                    DetectedEntities = string.Join(",", detectedEntities)
-                });
-        }
-
-        // ─── HELPERS ──────────────────────────────────────────────
-        private async Task<List<CacheEntry>> LoadAllCacheAsync()
-        {
-            var rows = await _db.QueryAsync<CacheEntryRaw>(@"
-            SELECT 
-                CacheID,
-                QuestionText,
-                NormalizedQuestion,
-                GeneratedSQL,
-                SQLTemplate,
-                QuestionVector,
-                NormalizedVector
-            FROM QueryCache");
-
-            return rows
-                .Where(r => !string.IsNullOrEmpty(r.NormalizedVector))
-                .Select(r => new CacheEntry
-                {
-                    CacheID = r.CacheID,
-                    QuestionText = r.QuestionText,
-                    NormalizedQuestion = r.NormalizedQuestion,
-                    GeneratedSQL = r.GeneratedSQL,
-                    SQLTemplate = r.SQLTemplate,
-                    QuestionVector = JsonSerializer.Deserialize<float[]>(r.QuestionVector)
-                                         ?? Array.Empty<float>(),
-                    NormalizedVector = JsonSerializer.Deserialize<float[]>(r.NormalizedVector)
-                                         ?? Array.Empty<float>()
-                }).ToList();
-        }
-
-        private async Task UpdateHitCountAsync(int cacheID)
-        {
-            await _db.ExecuteAsync(@"
-            UPDATE QueryCache 
-            SET HitCount = HitCount + 1, LastUsedAt = GETDATE() 
-            WHERE CacheID = @CacheID",
-                new { CacheID = cacheID });
-        }
-
-        private static float CosineSimilarity(float[] a, float[] b)
-        {
-            float dot = 0, magA = 0, magB = 0;
-            for (int i = 0; i < a.Length; i++)
-            {
-                dot += a[i] * b[i];
-                magA += a[i] * a[i];
-                magB += b[i] * b[i];
-            }
-            return dot / (MathF.Sqrt(magA) * MathF.Sqrt(magB));
-        }
-
-        // ─── Inject new parameter values into SQL template ────────
-        private string InjectParameters(string sqlTemplate, List<QueryParameter> parameters)
-        {
-            var sql = sqlTemplate;
-            foreach (var p in parameters)
-                sql = sql.Replace(p.Placeholder, p.Value.ToString());
-            return sql;
-        }
-
+        /// ── Main method to save a turn's data into the cache ───────────────────────
         public async Task SaveToCacheAsync(
-        MemoryTurn turn,
-        MemoryChain chain,
-        string normalizedQuery)
+      MemoryTurn turn,
+      MemoryChain chain,
+      string normalizedQuery)
         {
-            // ── Guard: only save if SQL is valid ─────────────────────────
             if (string.IsNullOrEmpty(turn.GeneratedSQL)) return;
 
-            // ── 1. QuestionText ──────────────────────────────────────────
-            var questionText = turn.RefinedQuery;
-            // e.g. "Include Attendance Information for Student10"
+            // ── Extract parameters once; reuse everywhere ────────────────
+            var extractedParams = ParameterExtractor.Extract(turn.RefinedQuery);
 
-            // ── 2. QuestionVector ────────────────────────────────────────
-            var questionVector = await _embeddingService.GetEmbeddingAsync(turn.RefinedQuery);
+            // ── Parameterized templates (for matching future queries) ────
+            var questionTemplate = ParameterExtractor.Templatize(turn.RefinedQuery, extractedParams);
+            var normalizedTemplate = ParameterExtractor.Templatize(normalizedQuery, extractedParams);
 
-            // ── 3. NormalizedQuestion ────────────────────────────────────
-            var normalizedQuestion = normalizedQuery;
-            // e.g. "attendance student"
+            // ── Embed templates (not raw text) so 60%/75%/80% all match ─
+            var questionVector = await _embeddingService.GetEmbeddingAsync(questionTemplate);
+            var normalizedVector = await _embeddingService.GetEmbeddingAsync(normalizedTemplate);
 
-            // ── 4. NormalizedVector ──────────────────────────────────────
-            var normalizedVector = await _embeddingService.GetEmbeddingAsync(normalizedQuery);
-
-            // ── 5. GeneratedSQL (Cumulative) ─────────────────────────────
-            // Full SQL including all prior turns joined together
-            var generatedSQL = turn.GeneratedSQL;
-
-            // ── 6. IncrementalSQL ────────────────────────────────────────
-            // Only what THIS turn ADDED over previous turn
-            var previousSQL = chain.Turns
-                                   .TakeLast(2)
-                                   .FirstOrDefault()?.GeneratedSQL ?? string.Empty;
-            var incrementalSQL = ExtractIncrementalSQL(previousSQL, turn.GeneratedSQL);
-
-            // ── 7. SQLTemplate ───────────────────────────────────────────
-            // Replace entity name with placeholder for reuse
-            var sqlTemplate = turn.GeneratedSQL?
+            // ── SQL template: entity name + all parameter placeholders ───
+            var sqlTemplate = turn.GeneratedSQL
                 .Replace($"'{turn.ResolvedEntity?.Name}'", "{EntityName}",
                          StringComparison.OrdinalIgnoreCase);
+            sqlTemplate = ParameterExtractor.Templatize(sqlTemplate, extractedParams);
 
-            // ── 8. IncrementalFields ─────────────────────────────────────
-            // Fields/tables ADDED in this turn only
-            var incrementalFields = ExtractFields(incrementalSQL);
-            // e.g. ["AttendanceDate", "AttendanceStatus"]
+            // ── Incremental SQL ──────────────────────────────────────────
+            var previousSQL = chain.Turns.TakeLast(2).FirstOrDefault()?.GeneratedSQL ?? string.Empty;
+            var incrementalSQL = ExtractIncrementalSQL(previousSQL, turn.GeneratedSQL);
 
-            // ── 9. RequiredPriorFields ───────────────────────────────────
-            // Fields that must exist in session before this cache can be used
-            var requiredPriorFields = ExtractFields(previousSQL);
-            // e.g. ["StudentName", "DOB", "Address"]
-
-            // ── 10. TurnLevel ────────────────────────────────────────────
-            var turnLevel = turn.TurnNumber;
-
-            // ── 11. QueryTypes ───────────────────────────────────────────
-            var queryTypes = turn.QueryType;
-            // e.g. "Attendance"
-
-            // ── 12. DetectedEntities ─────────────────────────────────────
-            var detectedEntities = JsonSerializer.Serialize(new
-            {
-                Type = turn.ResolvedEntity?.Type.ToString(),
-                Name = turn.ResolvedEntity?.Name
-            });
-            // e.g. {"Type":"Student","Name":"Student10"}
-
-            // ── 13. ChainID ──────────────────────────────────────────────
-            var chainID = chain.ChainID;
-
-            // ── Build record and save ────────────────────────────────────
             var record = new QueryCacheRecord
             {
-                TurnLevel = turnLevel,
-                QuestionText = questionText,
+                TurnLevel = turn.TurnNumber,
+                QuestionText = turn.RefinedQuery,        // raw, for display
+                QuestionTemplate = questionTemplate,          // ← NEW: for matching
                 QuestionVector = questionVector,
-                NormalizedQuestion = normalizedQuestion,
+                NormalizedQuestion = normalizedTemplate,
                 NormalizedVector = normalizedVector,
-                GeneratedSQL = generatedSQL,
+                GeneratedSQL = turn.GeneratedSQL,
                 IncrementalSQL = incrementalSQL,
                 SQLTemplate = sqlTemplate,
-                IncrementalFields = JsonSerializer.Serialize(incrementalFields),
-                RequiredPriorFields = JsonSerializer.Serialize(requiredPriorFields),
-                QueryType = queryTypes,
-                DetectedEntities = detectedEntities,
+                IncrementalFields = JsonSerializer.Serialize(ExtractFields(incrementalSQL)),
+                RequiredPriorFields = JsonSerializer.Serialize(ExtractFields(previousSQL)),
+                QueryType = turn.QueryType,
+                DetectedEntities = JsonSerializer.Serialize(new
+                {
+                    Type = turn.ResolvedEntity?.Type.ToString(),
+                    Name = turn.ResolvedEntity?.Name
+                }),
+                ExtractedParameters = JsonSerializer.Serialize(extractedParams), // ← NEW
                 CreatedAt = DateTime.UtcNow
             };
 
             await InsertQueryCacheAsync(record);
         }
-
-
-        
-        
 
         // ── Extract what changed between two SQL strings ──────────────────
         private string ExtractIncrementalSQL(string previousSQL, string currentSQL)
@@ -356,6 +172,7 @@ namespace AIQueryPlatform.LLMServiceOperator.Services
             const string sql = @"
         INSERT INTO [dbo].[QueryCache]
             ([QuestionText]
+            ,[QuestionTemplate]
             ,[QuestionVector]
             ,[GeneratedSQL]
             ,[QueryTypes]
@@ -366,13 +183,14 @@ namespace AIQueryPlatform.LLMServiceOperator.Services
             ,[NormalizedQuestion]
             ,[NormalizedVector]
             ,[SQLTemplate]
-            ,[ParameterTypes]
+            ,[ExtractedParameters]
             ,[IncrementalSQL]
             ,[IncrementalFields]
             ,[RequiredPriorFields]
             ,[TurnLevel])
         VALUES
             (@QuestionText
+            ,@QuestionTemplate
             ,@QuestionVector
             ,@GeneratedSQL
             ,@QueryTypes
@@ -383,7 +201,7 @@ namespace AIQueryPlatform.LLMServiceOperator.Services
             ,@NormalizedQuestion
             ,@NormalizedVector
             ,@SQLTemplate
-            ,@ParameterTypes
+            ,@ExtractedParameters 
             ,@IncrementalSQL
             ,@IncrementalFields
             ,@RequiredPriorFields
@@ -395,6 +213,8 @@ namespace AIQueryPlatform.LLMServiceOperator.Services
                 // ── Core Question ────────────────────────────────────────
                 QuestionText = record.QuestionText,
                 // e.g. "Include Attendance for Student10"
+
+                QuestionTemplate = record.QuestionTemplate,
 
                 QuestionVector = Helper.SerializeVector(record.QuestionVector),
                 // float[] → binary/json for storage
@@ -416,7 +236,7 @@ namespace AIQueryPlatform.LLMServiceOperator.Services
                 DetectedEntities = record.DetectedEntities,
                 // e.g. {"Type":"Student","Name":"Student10"}
 
-                ParameterTypes = record.ParameterTypes,
+                ExtractedParameters = record.ExtractedParameters,
                 // e.g. {"EntityType":"Student","EntityName":"string"}
 
                 // ── Fields Tracking ──────────────────────────────────────
@@ -442,5 +262,7 @@ namespace AIQueryPlatform.LLMServiceOperator.Services
                 LastUsedAt = DateTime.UtcNow  // same as CreatedAt on insert
             });
         }
+
+
     }
 }

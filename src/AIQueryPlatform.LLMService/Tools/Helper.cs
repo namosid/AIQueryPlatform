@@ -41,5 +41,13 @@ namespace AIQueryPlatform.LLMServiceOperator.Tools
             LogMessage(String.Format("Unrecognized QueryType value: '{value}'", value));
             return QueryType.Unknown;
         }
+
+        // ── Helper: safely deserialize stored params ────────────────────────
+        public static Dictionary<string, string> DeserializeParams(string? json)
+        {
+            if (string.IsNullOrEmpty(json)) return new();
+            try { return JsonSerializer.Deserialize<Dictionary<string, string>>(json) ?? new(); }
+            catch { return new(); }
+        }
     }
 }

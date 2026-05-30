@@ -18,7 +18,7 @@ namespace AIQueryPlatform.LLMServiceOperator.Services
         {
             string relativePath = Convert.ToString(_config["SchemaSettings:SchemaPath"]);
 
-            var fullPath = Path.Combine(relativePath,filename + ".txt");
+            var fullPath = Path.Combine(relativePath, "SchemaFiles//" + filename + ".txt");
 
             if (!File.Exists(fullPath))
                 throw new Exception($"Schema file not found at: {fullPath}");

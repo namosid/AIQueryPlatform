@@ -1,4 +1,5 @@
-﻿using AIQueryPlatform.LLMServiceOperator.Models.STM;
+﻿using AIQueryPlatform.LLMServiceOperator.Models;
+using AIQueryPlatform.LLMServiceOperator.Models.STM;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,6 +10,6 @@ namespace AIQueryPlatform.LLMServiceOperator.Interface
 {
     public interface ILlmService
     {
-        Task<string> AskAsync(string schemaJson, string prompt, MemoryTurn turn);
+        Task<string> AskAsync(SearchOutput entityOutput, string prompt, MemoryTurn turn);
     }
 }

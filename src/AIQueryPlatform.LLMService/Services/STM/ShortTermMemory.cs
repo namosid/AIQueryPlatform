@@ -267,22 +267,49 @@ namespace AIQueryPlatform.LLMServiceOperator.Services.STM
         public bool IsContineousContext(string originalPrompt, ExtractedEntity extracted)
         {
             var lastTurn = GetLatestTurn();
-            if (extracted.Name != null && lastTurn?.ResolvedEntity != null)
-            {
+            // No prior context exists — cannot be continuous
+            if (lastTurn?.ResolvedEntity == null)
+                return false;
+
+            // ── Case 1: User mentioned NO entity in new query ────────────
+            // "Show attendance below 75%" — no name, just adding a filter
+            // This is genuinely continuous — carry forward the session entity
+            if (extracted.Name == null)
                 return true;
-            }
-            return false;
+
+            // ── Case 2: User mentioned an entity — must match prior one ──
+            // "Show attendance for Student15" while session has Student12
+            // Different entity = new context, not continuous
+            if (!string.Equals(extracted.Name, lastTurn.ResolvedEntity.Name,
+                               StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            // ── Case 3: Same entity name — check type also matches ───────
+            // Avoid "Student10" matching a "Teacher10" from a prior turn
+            if (extracted.Type != EntityType.Unknown &&
+                lastTurn.ResolvedEntity.Type != EntityType.Unknown &&
+                extracted.Type != lastTurn.ResolvedEntity.Type)
+                return false;
+
+            // Same entity, same type — genuinely continuous
+            return true;
         }
 
         public string BuildRefinedQuery(string originalPrompt, ExtractedEntity extracted)
         {
             if (extracted.Name == null) return originalPrompt;
 
+            // ── Guard 1: filter/aggregate query — never inject entity ─────
+            if (ParameterExtractor.IsAggregateOrFilterQuery(originalPrompt))
+                return originalPrompt;
+
+            // ── Guard 2: no entity to inject ─────────────────────────────
+            if (string.IsNullOrEmpty(extracted.Name))
+                return originalPrompt;
+
             // ── Replace pronoun if present ────────────────────────────────
-            // Split into words and check each word against HashSet
             var words = originalPrompt.Split(' ', StringSplitOptions.RemoveEmptyEntries);
             var foundPronoun = words.FirstOrDefault(w => Pronouns.Contains(w));
-
             if (foundPronoun != null)
             {
                 return Regex.Replace(
@@ -300,6 +327,7 @@ namespace AIQueryPlatform.LLMServiceOperator.Services.STM
             return originalPrompt;
         }
 
+        
         public string GetHistory(HistoryMode mode = HistoryMode.CurrentChainOnly, bool includeSQL = true)
         {
             return mode switch

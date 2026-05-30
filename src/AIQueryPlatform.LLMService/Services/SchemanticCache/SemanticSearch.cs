@@ -36,55 +36,93 @@ namespace AIQueryPlatform.LLMServiceOperator.Services
             _embeddingService = embeddingService;
         }
         public async Task<CacheSearchResult?> SearchCacheAsync(
-        string refinedQuery,
-        string normalizedQuery,
-        MemoryChain currentChain)
+      string refinedQuery,
+      string normalizedQuery,
+      MemoryChain currentChain)
         {
-            // ── Step 1: Embed incoming query ─────────────────────────────
-            var queryVector = await _embeddingService.GetEmbeddingAsync(refinedQuery);
-            var normalizedVector = await _embeddingService.GetEmbeddingAsync(normalizedQuery);
+            // ── Step 1: Extract parameters from incoming query ───────────
+            var incomingParams = ParameterExtractor.Extract(refinedQuery);
+            var queryTemplate = ParameterExtractor.Templatize(refinedQuery, incomingParams);
+            var normalizedTemplate = ParameterExtractor.Templatize(normalizedQuery, incomingParams);
 
-            // ── Detect QueryType from refined query ──────────────────────
+            // ── Step 2: Embed TEMPLATES (not raw queries) ────────────────
+            // This ensures "below 60%" and "below 75%" produce similar vectors
+            var queryVector = await _embeddingService.GetEmbeddingAsync(queryTemplate);
+            var normalizedVector = await _embeddingService.GetEmbeddingAsync(normalizedTemplate);
+
+            // ── Step 3: Detect QueryType ─────────────────────────────────
             var queryType = QueryTypeDetector.Detect(refinedQuery);
 
-            // ── Step 2: Get candidates from DB by vector similarity ──────
+            // ── Step 4: Get candidates from DB by vector similarity ──────
             var candidates = await FetchCandidatesAsync(queryVector, normalizedVector, queryType);
-
             if (!candidates.Any()) return null;
 
-            // ── Step 3: Get current session fields ───────────────────────
+            // ── Step 5: Get current session fields ───────────────────────
             var currentFields = currentChain != null
-           ? ExtractCurrentSessionFields(currentChain)
-           : new List<string>();
-            if (currentChain == null)
-            {
-                if (candidates.Count > 0)
-                    currentFields = JsonSerializer.Deserialize<List<string>>(candidates.FirstOrDefault().RequiredPriorFields);
-            }
+                ? ExtractCurrentSessionFields(currentChain)
+                : new List<string>();
 
+            if (currentChain == null && candidates.Count > 0)
+                currentFields = JsonSerializer.Deserialize<List<string>>(
+                    candidates.First().RequiredPriorFields);
 
-            // ── Step 4: Score and filter candidates ─────────────────────
+            // ── Step 6: Score and filter candidates ─────────────────────
             var scored = ScoreCandidates(candidates, queryVector, normalizedVector,
                                          currentFields, refinedQuery);
 
-            // ── Step 5: Return best match ────────────────────────────────
+            // ── Step 7: Among high-scorers, prefer closest param match ───
             var best = scored
                 .Where(s => s.FinalScore >= MinScoreThreshold)
+                .Select(s =>
+                {
+                    var cachedParams = Helper.DeserializeParams(s.Record.ExtractedParameters);
+
+                    // Boost score when placeholder keys align (same param types)
+                    var keyOverlap = incomingParams.Keys
+                        .Intersect(cachedParams.Keys, StringComparer.OrdinalIgnoreCase)
+                        .Count();
+                    var keyUnion = incomingParams.Keys
+                        .Union(cachedParams.Keys, StringComparer.OrdinalIgnoreCase)
+                        .Count();
+
+                    double paramBoost = keyUnion > 0 ? (double)keyOverlap / keyUnion * 0.1 : 0;
+
+                    return new
+                    {
+                        s.Record,
+                        s.MatchType,
+                        FinalScore = s.FinalScore + paramBoost,
+                        CachedParams = cachedParams,
+                        IncomingParams = incomingParams
+                    };
+                })
                 .OrderByDescending(s => s.FinalScore)
                 .FirstOrDefault();
 
             if (best == null) return null;
 
-            // ── Step 6: Update HitCount and LastUsedAt ───────────────────
+            // ── Step 8: Resolve executable SQL with new param values ─────
+            var executableSQL = ParameterExtractor.Apply(
+                best.Record.SQLTemplate,
+                best.CachedParams,
+                best.IncomingParams,
+                entityName: currentChain?.Entity?.Name
+                );
+
+            // ── Step 9: Update HitCount and LastUsedAt ───────────────────
             await UpdateCacheHitAsync(best.Record.CacheId);
 
             return new CacheSearchResult
             {
                 Record = best.Record,
-                FinalScore = best.FinalScore,
-                MatchType = best.MatchType
+                FinalScore = float.Parse(best.FinalScore.ToString()),
+                MatchType = best.MatchType,
+                ExecutableSQL = executableSQL,        // ← ready to run, params injected
+                ResolvedParams = best.IncomingParams   // ← for logging/debugging
             };
         }
+
+        
 
         private async Task<List<QueryCacheRecord>> FetchCandidatesAsync(
         float[] queryVector,
@@ -98,6 +136,7 @@ namespace AIQueryPlatform.LLMServiceOperator.Services
         SELECT TOP (@TopN)
              CacheID
             ,QuestionText
+            ,QuestionTemplate
             ,QuestionVector
             ,NormalizedQuestion
             ,NormalizedVector
@@ -106,7 +145,7 @@ namespace AIQueryPlatform.LLMServiceOperator.Services
             ,SQLTemplate
             ,QueryTypes
             ,DetectedEntities
-            ,ParameterTypes
+            ,ExtractedParameters
             ,IncrementalFields
             ,RequiredPriorFields
             ,TurnLevel
@@ -136,6 +175,7 @@ namespace AIQueryPlatform.LLMServiceOperator.Services
                     {
                         CacheId = r.CacheID,
                         QuestionText = r.QuestionText,
+                        QuestionTemplate = r.QuestionTemplate,
                         QuestionVector = ParseVector(r.QuestionVector),      // ✅ string → float[]
                         NormalizedQuestion = r.NormalizedQuestion,
                         NormalizedVector = ParseVector(r.NormalizedVector),    // ✅ string → float[]
@@ -144,7 +184,7 @@ namespace AIQueryPlatform.LLMServiceOperator.Services
                         SQLTemplate = r.SQLTemplate,
                         QueryType = Helper.ParseQueryType(r.QueryTypes),
                         DetectedEntities = r.DetectedEntities,
-                        ParameterTypes = r.ParameterTypes,
+                        ExtractedParameters = r.ExtractedParameters,
                         IncrementalFields = r.IncrementalFields,
                         RequiredPriorFields = r.RequiredPriorFields,
                         TurnLevel = r.TurnLevel,

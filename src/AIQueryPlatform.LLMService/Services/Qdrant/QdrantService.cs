@@ -12,7 +12,8 @@ namespace AIQueryPlatform.LLMServiceOperator.Services.Qdrant
         private readonly QdrantClient _client;
         private const string CollectionName = "schema";
         public readonly List<(string tableName, string content)> _schemaChunks;
-        public QdrantService(string fullSchema, string qdrantURL, string qdrantAPIKey)
+        EntityTableMappingService _mappingService;
+        public QdrantService(string fullSchema, string qdrantURL, string qdrantAPIKey, string mappingPath)
         {
             _client = new QdrantClient(
                 host: qdrantURL,
@@ -29,6 +30,7 @@ namespace AIQueryPlatform.LLMServiceOperator.Services.Qdrant
                 var tableName = x.Split('\n').FirstOrDefault()?.Trim() ?? "Unknown";
                 return (tableName, content);
             }).ToList();
+            _mappingService = new EntityTableMappingService(mappingPath);
         }
 
         public async Task InitAsync(string fullSchema, EmbeddingService embeddingService)
@@ -113,7 +115,8 @@ namespace AIQueryPlatform.LLMServiceOperator.Services.Qdrant
                 )).ToList();
 
             // Step 4: Detect entities from user query
-            //var entities = EntityDetector.DetectEntities(question);
+            var detected = EntityDetector.DetectEntities(question);
+            var requiredMappingTables = _mappingService.GetRequiredTables(detected);
 
             var requiredTableNames = new HashSet<string>(
                 qdrantTables.Select(t => t.tableName));
@@ -122,6 +125,7 @@ namespace AIQueryPlatform.LLMServiceOperator.Services.Qdrant
             Console.WriteLine("Table Identifing base on Output Rules");
             var outputTables = BuildOutputRulesPrompt(requiredTableNames);
 
+            outputTables.UnionWith(requiredMappingTables);
             // Step 6: For injected tables missing from Qdrant results
             var finalSchemaBlocks = GetMissingTables(outputTables, qdrantTables);
 
@@ -129,7 +133,8 @@ namespace AIQueryPlatform.LLMServiceOperator.Services.Qdrant
             {
                 Schema = string.Join("\n\n", finalSchemaBlocks),
                 QueryVector = queryVector,
-                Entities = outputTables
+                Entities = outputTables,
+                MappingService = _mappingService
             };
 
             // Step 8: Combine schema + output rules → return to LLM
