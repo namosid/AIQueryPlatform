@@ -45,7 +45,7 @@ public class QueryOrchestrationService : IQueryOrchestrationService
         _llmServicePipe = llmServicePipe;
     }
 
-    public async IAsyncEnumerable<StreamEvent> ExecuteQueryStreamAsync(string query)
+    public async IAsyncEnumerable<StreamEvent> ExecuteQueryStreamAsync(string query, string? conversationId = null)
     {
         if (!_tenantContext.HasTenant)
         {
@@ -61,7 +61,15 @@ public class QueryOrchestrationService : IQueryOrchestrationService
         var stopwatch = Stopwatch.StartNew();
 
         // Step 1: Log initial query
-        _logger.LogInformation("Processing query for tenant {TenantId}: {Query}", tenant.TenantId, query);
+        if (!string.IsNullOrWhiteSpace(conversationId))
+        {
+            _logger.LogInformation("Processing query for tenant {TenantId} in conversation {ConversationId}: {Query}", 
+                tenant.TenantId, conversationId, query);
+        }
+        else
+        {
+            _logger.LogInformation("Processing query for tenant {TenantId}: {Query}", tenant.TenantId, query);
+        }
 
         yield return new StreamEvent
         {
@@ -262,7 +270,7 @@ public class QueryOrchestrationService : IQueryOrchestrationService
             tenant.TenantId, stopwatch.ElapsedMilliseconds);
     }
 
-    public async Task<QueryResponse> ExecuteQueryAsync(string query)
+    public async Task<QueryResponse> ExecuteQueryAsync(string query, string? conversationId = null)
     {
         if (!_tenantContext.HasTenant)
         {
@@ -280,7 +288,15 @@ public class QueryOrchestrationService : IQueryOrchestrationService
         ChartData? chartData = null;
         try
         {
-            _logger.LogInformation("Processing query for tenant {TenantId}: {Query}", tenant.TenantId, query);
+            if (!string.IsNullOrWhiteSpace(conversationId))
+            {
+                _logger.LogInformation("Processing query for tenant {TenantId} in conversation {ConversationId}: {Query}", 
+                    tenant.TenantId, conversationId, query);
+            }
+            else
+            {
+                _logger.LogInformation("Processing query for tenant {TenantId}: {Query}", tenant.TenantId, query);
+            }
 
             // Load schema
             //var schema = await _schemaService.GetDatabaseSchemaAsync(tenant.ConnectionString, tenant.TenantId);
@@ -297,7 +313,7 @@ public class QueryOrchestrationService : IQueryOrchestrationService
             };
 
             // Using the new LLMServicePipe to process the query through the entire pipeline
-            var response = await _llmServicePipe.ProcessQuery(query, td);
+            var response = await _llmServicePipe.ProcessQuery(query, td, conversationId);
             var visualizationType = VisualizationType.TEXT; // Default to chart, will adjust based on response
 
             if (response.Type == ResponseType.SQL)

@@ -178,7 +178,7 @@ export class ModalAPIService extends APIService {
   /**
    * Generate PDF report from query results
    */
-  async generatePDF(query: string, sql: string, result: any, chartData?: any): Promise<Blob> {
+  async generatePDF(query: string, sql: string, result: any, chartData?: any, conversationId?: string): Promise<Blob> {
     try {
       const response = await fetch(
         `${this.config.apiBaseUrl}/api/query/generate-report-from-data`,
@@ -191,6 +191,7 @@ export class ModalAPIService extends APIService {
             result,
             chartData: chartData || null,
             reportTitle: 'Query Results',
+            conversationId,
           }),
         }
       );

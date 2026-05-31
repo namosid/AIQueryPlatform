@@ -257,7 +257,7 @@ namespace AIQueryPlatform.LLMServiceOperator.Services.STM
         }
         public MemoryTurn GetLatestTurn()
         {
-            return _session.Turns.LastOrDefault(); 
+            return _session.Turns.LastOrDefault();
         }
         public MemoryChain GetCurrentChain()
         {

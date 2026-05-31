@@ -95,7 +95,20 @@ public class SqlValidatorService : ISqlValidatorService
         if (Regex.IsMatch(sql, @"SELECT\s+TOP\s+\d+", RegexOptions.IgnoreCase))
         {
             // Replace existing TOP with our max
-            sql = Regex.Replace(sql, @"(SELECT\s+)TOP\s+\d+", $"$1TOP {maxRows}", RegexOptions.IgnoreCase);
+            sql = Regex.Replace(
+                sql,
+                @"(SELECT\s+)TOP\s+(\d+)",
+                m =>
+                {
+                    int currentTop = int.TryParse(m.Groups[2].Value, out var n) ? n : 0;
+                    if (currentTop > maxRows)
+                    {
+                        return $"{m.Groups[1].Value}TOP {maxRows}";
+                    }
+                    return m.Value;
+                },
+                RegexOptions.IgnoreCase
+            );
         }
         // Check if query has LIMIT clause (MySQL/PostgreSQL) - convert to TOP for SQL Server
         else if (Regex.IsMatch(sql, @"LIMIT\s+\d+", RegexOptions.IgnoreCase))

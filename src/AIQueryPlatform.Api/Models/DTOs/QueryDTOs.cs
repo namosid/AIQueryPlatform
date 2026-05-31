@@ -9,6 +9,7 @@ public class QueryRequest
     public string? Context { get; set; }
     public string? TenantId { get; set; }
     public string? UserRole { get; set; }
+    public string? ConversationId { get; set; }
 }
 
 /// <summary>
@@ -93,6 +94,7 @@ public class ReportRequest
 {
     public string Query { get; set; } = string.Empty;
     public string? ReportTitle { get; set; }
+    public string? ConversationId { get; set; }
 }
 
 /// <summary>
@@ -104,5 +106,6 @@ public class ReportFromDataRequest
     public string GeneratedSql { get; set; } = string.Empty;
     public QueryResult Result { get; set; } = new();
     public ChartData? ChartData { get; set; }
-    public string? ReportTitle { get; set; }
+    public string? ReportTitle { get; set; }    
+    public string? ConversationId { get; set; }
 }

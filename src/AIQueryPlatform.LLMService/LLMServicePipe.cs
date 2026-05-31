@@ -56,7 +56,7 @@ namespace AIQueryPlatform.LLMServiceOperator
             relativePath = Convert.ToString(configuration["SchemaSettings:SchemaPath"]);
 
         }
-        public async Task<LLMResponse> ProcessQuery(string userPrompt, TenantData tenant)
+        public async Task<LLMResponse> ProcessQuery(string userPrompt, TenantData tenant, string? conversationId = null)
         {
             var result = new LLMResponse();
             try
@@ -69,7 +69,7 @@ namespace AIQueryPlatform.LLMServiceOperator
                     return result;
                 }
                 var embeddingService = new EmbeddingService(apiKeyTextModel, endPointTextModel, deploymentNameTextModel);
-                
+
                 var mappingPath = Path.Combine(relativePath, "Mapping//" + tenant.MappingFile + ".json");
                 var qdrantService = new QdrantService(fullSchema, qdrantURL, qdrantAPIKey, mappingPath);
                 await qdrantService.InitAsync(fullSchema, embeddingService);
@@ -81,7 +81,7 @@ namespace AIQueryPlatform.LLMServiceOperator
                 var clarificationAgent = new ClarificationAgent(clarificationRegistry);
 
                 // short term memory for follow-up detection and context enrichment
-                var memory = new ShortTermMemory(tenant.TenantId);
+                var memory = new ShortTermMemory(conversationId == null ? tenant.TenantId : conversationId);
 
                 if (memory.GetLatestTurn()?.UserInput == userPrompt)
                 {

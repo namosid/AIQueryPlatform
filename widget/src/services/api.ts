@@ -89,13 +89,14 @@ class APIService {
   /**
    * Execute a natural language query
    */
-  async executeQuery(query: string): Promise<QueryResponse> {
+  async executeQuery(query: string, conversationId?: string): Promise<QueryResponse> {
     try {
       const payload: QueryRequest = {
         query,
         context: 'widget',
         tenantId: this.config.tenantId,
         userRole: this.config.userRole,
+        ...(conversationId && { conversationId }),
       };
 
       const response = await fetch(`${this.config.apiBaseUrl}/api/query/execute`, {
@@ -132,7 +133,8 @@ class APIService {
    */
   async executeStreamingQuery(
     query: string,
-    onProgress: (data: any) => void
+    onProgress: (data: any) => void,
+    conversationId?: string
   ): Promise<void> {
     try {
       const payload: QueryRequest = {
@@ -140,6 +142,7 @@ class APIService {
         context: 'widget',
         tenantId: this.config.tenantId,
         userRole: this.config.userRole,
+        ...(conversationId && { conversationId }),
       };
 
       const response = await fetch(

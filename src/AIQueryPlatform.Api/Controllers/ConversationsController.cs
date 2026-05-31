@@ -285,7 +285,7 @@ public class ConversationsController : ControllerBase
             _logger.LogInformation("User message saved: {MessageId}", userMessage.Id);
 
             // Step 2: Execute query via LLM
-            var queryResponse = await _queryOrchestrationService.ExecuteQueryAsync(request.Query);
+            var queryResponse = await _queryOrchestrationService.ExecuteQueryAsync(request.Query, id);
 
             if (!queryResponse.Success)
             {
