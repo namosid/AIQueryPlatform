@@ -24,8 +24,8 @@ namespace AIQueryPlatform.LLMServiceOperator.Services
         {
             var engine = new PromptRuleEngine();
             var rules = engine.BuildRules(prompt);
-            var outputEngine = new OutputRuleEngine();
-            var outputRules = outputEngine.BuildOutputRules(prompt);
+            //var outputEngine = new OutputRuleEngine();
+            var outputRules = entityOutput.MappingService.BuildOutputRules(entityOutput.Entities);
             var enumContext = entityOutput.MappingService.BuildEnumContext(entityOutput.Entities);
             var fullPrompt = $@"
                 You are an expert SQL Server database architect.

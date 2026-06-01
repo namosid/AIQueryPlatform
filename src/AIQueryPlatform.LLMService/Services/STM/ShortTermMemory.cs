@@ -14,7 +14,7 @@ namespace AIQueryPlatform.LLMServiceOperator.Services.STM
     {
         private SessionContext _session;
         private ExtractedEntity? _lastResolvedEntity;
-        
+
 
         public ShortTermMemory(string conversationID)
         {
@@ -257,7 +257,7 @@ namespace AIQueryPlatform.LLMServiceOperator.Services.STM
         }
         public MemoryTurn GetLatestTurn()
         {
-            return _session.Turns.LastOrDefault(); 
+            return _session.Turns.LastOrDefault();
         }
         public MemoryChain GetCurrentChain()
         {
@@ -327,7 +327,7 @@ namespace AIQueryPlatform.LLMServiceOperator.Services.STM
             return originalPrompt;
         }
 
-        
+
         public string GetHistory(HistoryMode mode = HistoryMode.CurrentChainOnly, bool includeSQL = true)
         {
             return mode switch
@@ -366,10 +366,15 @@ namespace AIQueryPlatform.LLMServiceOperator.Services.STM
             sb.AppendLine();
 
             // ── All Turns — lightweight ──────────────────────────────────
-            foreach (var turn in chain.Turns)
+            int count = 1;
+            foreach (var turn in chain.Turns.OrderByDescending(t => t.TurnNumber))
             {
-                sb.AppendLine($"Turn {turn.TurnNumber} [{turn.Type}]:");
-                sb.AppendLine($"  User: {turn.RefinedQuery}");
+                if (count == 3)
+                {
+                    break; // Only include the last two turns for context, as LLMs have token limits. Adjust as needed.
+                }
+                sb.AppendLine($"T{turn.TurnNumber}[{turn.Type}] > {turn.RefinedQuery}");
+                count++;
             }
 
             if (includeSQL)

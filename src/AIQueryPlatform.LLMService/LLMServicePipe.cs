@@ -69,10 +69,10 @@ namespace AIQueryPlatform.LLMServiceOperator
                     return result;
                 }
                 var embeddingService = new EmbeddingService(apiKeyTextModel, endPointTextModel, deploymentNameTextModel);
-                
+
                 var mappingPath = Path.Combine(relativePath, "Mapping//" + tenant.MappingFile + ".json");
-                var qdrantService = new QdrantService(fullSchema, qdrantURL, qdrantAPIKey, mappingPath);
-                await qdrantService.InitAsync(fullSchema, embeddingService);
+                var qdrantService = new QdrantService(fullSchema, qdrantURL, qdrantAPIKey, mappingPath, tenant.SchemaFile);
+                await qdrantService.InitAsync(mappingPath, embeddingService);
 
                 var cacheService = new SemanticCacheService(connectionString, embeddingService);
 
@@ -107,6 +107,7 @@ namespace AIQueryPlatform.LLMServiceOperator
                 string originalPrompt = userPrompt;
                 string refinedPrompt = userPrompt;
                 bool turnAlreadyAdded = false;
+                bool isContinuation = false;
 
                 var extractedForIntent = EntityNameExtractor.ResolveEntity(originalPrompt, memory.GetLatestTurn());
 
@@ -124,6 +125,7 @@ namespace AIQueryPlatform.LLMServiceOperator
                 {
                     refinedPrompt = memory.EnrichWithContext(userPrompt);
                     Helper.LogMessage($"[Agent] Follow-up enriched: '{originalPrompt}'");
+                    isContinuation = true;
                 }
 
 
@@ -137,6 +139,7 @@ namespace AIQueryPlatform.LLMServiceOperator
                     if (memory.IsContineousContext(userPrompt, extractedForIntent))
                     {
                         refinedPrompt = memory.BuildRefinedQuery(userPrompt, extractedForIntent);
+                        isContinuation = true;
                     }
 
                     // ─── Step 1: Analyze intent ────────────────────────────
@@ -158,8 +161,11 @@ namespace AIQueryPlatform.LLMServiceOperator
                 }
 
                 // PREPARE PROMPT FOR LLM
-                finalQuery = BuildLLMPrompt(memory.GetHistory(HistoryMode.CurrentChainOnly, includeSQL: true), refinedPrompt);
+                var history = isContinuation
+                        ? memory.GetHistory(HistoryMode.CurrentChainOnly, includeSQL: true)
+                        : null; // or an empty list
 
+                finalQuery = BuildLLMPrompt(history, refinedPrompt);
 
                 var extractor = EntityNameExtractor.Extract(originalPrompt);
                 // ── Step 2: Resolve pronoun from last turn ────────────────────────

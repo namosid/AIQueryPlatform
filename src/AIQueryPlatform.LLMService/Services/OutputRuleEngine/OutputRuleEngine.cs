@@ -10,7 +10,6 @@ namespace AIQueryPlatform.LLMServiceOperator.Services
     public class OutputRuleEngine
     {
         public readonly List<OutputRule> _rules;
-
         public OutputRuleEngine()
         {
             _rules = BuildRules();
@@ -259,5 +258,7 @@ OPTIONAL:
                     }
             };
         }
+
+      
     }
 }

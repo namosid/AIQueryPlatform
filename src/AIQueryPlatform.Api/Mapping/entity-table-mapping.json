@@ -2,7 +2,14 @@
   "EntityTableMappings": [
     {
       "EntityType": "Student",
+      "Synonyms": [ "Pupil", "Learner", "Scholar", "Child", "Kid", "Boy", "Girl", "Candidate", "Enrollee", "Admission" ],
       "PrimaryTable": "Students",
+      "ClassificationType": "Transactional",
+      "OutputRule": {
+        "Always": [ "AdmissionNumber", "FirstName", "LastName", "ClassName", "SectionName", "RollNumber" ],
+        "Optional": [ "DateOfBirth" ],
+        "Note": "Prefer readable student information instead of IDs only"
+      },
       "IdentifierColumns": [ "StudentID", "AdmissionNumber", "RollNumber", "AadharNumber" ],
       "DisplayColumns": [ "FirstName", "LastName", "Gender", "DateOfBirth", "BloodGroup", "AdmissionDate", "IsActive" ],
       "JoinTables": [
@@ -43,7 +50,14 @@
     },
     {
       "EntityType": "Staff",
+      "Synonyms": [ "Employee", "Teacher", "Faculty", "Instructor", "Educator", "Lecturer", "Peon", "Librarian", "Principal", "HeadMaster", "Accountant", "Clerk", "Support Staff", "Non-Teaching Staff", "Teaching Staff", "Worker" ],
       "PrimaryTable": "Staff",
+      "ClassificationType": "Transactional",
+      "OutputRule": {
+        "Always": [ "EmployeeCode", "FirstName", "LastName", "Designation" ],
+        "Optional": [ "Department", "Email", "Phone" ],
+        "Note": null
+      },
       "IdentifierColumns": [ "StaffID", "EmployeeCode", "AadharNumber" ],
       "DisplayColumns": [ "FirstName", "LastName", "Gender", "Designation", "StaffType", "JoiningDate", "IsActive" ],
       "JoinTables": [
@@ -76,7 +90,14 @@
     },
     {
       "EntityType": "Class",
+      "Synonyms": [ "Grade", "Standard", "Level", "Form", "Year Group", "Batch", "Stream", "Course Level" ],
       "PrimaryTable": "Classes",
+      "ClassificationType": "Transactional",
+      "OutputRule": {
+        "Always": [ "ClassID", "ClassName","SectionName" ],
+        "Optional": [],
+        "Note": "Prefer class names over IDs"
+      },
       "IdentifierColumns": [ "ClassID", "ClassName", "ClassNumeric", "Stream" ],
       "DisplayColumns": [ "ClassName", "ClassNumeric", "Stream", "IsActive" ],
       "JoinTables": [
@@ -96,7 +117,14 @@
     },
     {
       "EntityType": "Section",
+      "Synonyms": [ "Division", "Group", "Batch", "Room", "Classroom", "Wing", "Set" ],
       "PrimaryTable": "Sections",
+      "ClassificationType": "Transactional",
+      "OutputRule": {
+        "Always": [ "SectionID", "SectionName" ],
+        "Optional": [],
+        "Note": "Prefer section names over IDs"
+      },
       "IdentifierColumns": [ "SectionID", "SectionName" ],
       "DisplayColumns": [ "SectionName", "RoomNumber", "Capacity" ],
       "JoinTables": [
@@ -116,6 +144,7 @@
     },
     {
       "EntityType": "Subject",
+      "Synonyms": [ "Course", "Paper", "Topic", "Discipline", "Module", "Elective", "Stream Subject" ],
       "PrimaryTable": "Subjects",
       "IdentifierColumns": [ "SubjectID", "SubjectCode", "SubjectName" ],
       "DisplayColumns": [ "SubjectName", "SubjectCode", "SubjectType", "IsActive" ],
@@ -136,7 +165,14 @@
     },
     {
       "EntityType": "Exam",
+      "Synonyms": [ "Test", "Assessment", "Evaluation", "Quiz", "Examination", "Paper", "Midterm", "Final", "Unit Test", "Terminal Exam", "Board Exam" ],
       "PrimaryTable": "Examinations",
+      "ClassificationType": "AcademicAnalysis",
+      "OutputRule": {
+        "Always": [ "MarksObtained", "Grade", "ExamTypeName", "AcademicYear" ],
+        "Optional": [ "Remarks", "HallNumber" ],
+        "Note": null
+      },
       "IdentifierColumns": [ "ExamID", "HallNumber" ],
       "DisplayColumns": [ "ExamDate", "StartTime", "EndTime", "MaxMarks", "PassMarks", "HallNumber" ],
       "JoinTables": [
@@ -164,6 +200,7 @@
     },
     {
       "EntityType": "ExamType",
+      "Synonyms": [ "Test Type", "Assessment Type", "Evaluation Category", "Term", "Semester Exam", "Quarterly", "Half Yearly", "Annual" ],
       "PrimaryTable": "ExamTypes",
       "IdentifierColumns": [ "ExamTypeID", "ExamTypeName" ],
       "DisplayColumns": [ "ExamTypeName", "Weightage" ],
@@ -184,7 +221,14 @@
     },
     {
       "EntityType": "ExamResult",
+      "Synonyms": [ "Marks", "Score", "Result", "Grade", "Performance", "Mark Sheet", "Scorecard", "Obtained Marks" ],
       "PrimaryTable": "ExamResults",
+      "ClassificationType": "AcademicAnalysis",
+      "OutputRule": {
+        "Always": [ "MarksObtained", "Grade", "ExamTypeName", "YearLabel" ],
+        "Optional": [ "Remarks", "HallNumber" ],
+        "Note": null
+      },
       "IdentifierColumns": [ "ResultID" ],
       "DisplayColumns": [ "MarksObtained", "IsAbsent", "Grade", "Remarks", "IsVerified" ],
       "JoinTables": [
@@ -208,6 +252,7 @@
     },
     {
       "EntityType": "ReportCard",
+      "Synonyms": [ "Progress Card", "Mark Sheet", "Result Card", "Academic Report", "Progress Report", "Grade Card", "Term Report" ],
       "PrimaryTable": "ReportCards",
       "IdentifierColumns": [ "ReportCardID" ],
       "DisplayColumns": [ "TotalMarks", "ObtainedMarks", "Percentage", "Rank", "Grade", "Result", "Attendance" ],
@@ -228,6 +273,7 @@
     },
     {
       "EntityType": "AcademicYear",
+      "Synonyms": [ "Session", "School Year", "Year", "Term", "Academic Session", "Financial Year", "Batch Year" ],
       "PrimaryTable": "AcademicYears",
       "IdentifierColumns": [ "AcademicYearID", "YearLabel" ],
       "DisplayColumns": [ "YearLabel", "StartDate", "EndDate", "IsCurrent" ],
@@ -248,7 +294,14 @@
     },
     {
       "EntityType": "Attendance",
+      "Synonyms": [ "Student Attendance", "Present", "Absent", "Daily Attendance", "Attendance Record", "Roll Call", "Presence", "Absenteeism" ],
       "PrimaryTable": "StudentAttendance",
+      "ClassificationType": "AttendanceAnalysis",
+      "OutputRule": {
+        "Always": [ "TotalDays", "PresentDays", "AttendancePercent" ],
+        "Optional": [],
+        "Note": "Always aggregate per student — never return one row per attendance record"
+      },
       "IdentifierColumns": [ "AttendanceID" ],
       "DisplayColumns": [ "AttendanceDate", "PeriodNumber", "Status", "Remarks" ],
       "JoinTables": [
@@ -271,6 +324,7 @@
     },
     {
       "EntityType": "StaffAttendance",
+      "Synonyms": [ "Employee Attendance", "Teacher Attendance", "Staff Presence", "Staff Absent", "Punch In", "Punch Out", "In Time", "Out Time" ],
       "PrimaryTable": "StaffAttendance",
       "IdentifierColumns": [ "AttendanceID" ],
       "DisplayColumns": [ "AttendanceDate", "Status", "InTime", "OutTime", "Remarks" ],
@@ -286,7 +340,14 @@
     },
     {
       "EntityType": "Fee",
+      "Synonyms": [ "Invoice", "Bill", "Fee Invoice", "School Fee", "Tuition Fee", "Dues", "Challan", "Fee Receipt", "Fee Bill", "Payment Due" ],
       "PrimaryTable": "FeeInvoices",
+      "ClassificationType": "FinancialAnalysis",
+      "OutputRule": {
+        "Always": [ "InvoiceNumber", "InvoiceDate", "NetAmount", "Status" ],
+        "Optional": [ "Remarks" ],
+        "Note": null
+      },
       "IdentifierColumns": [ "InvoiceID", "InvoiceNumber" ],
       "DisplayColumns": [ "InvoiceDate", "DueDate", "TotalAmount", "Discount", "LateFine", "NetAmount", "Status" ],
       "JoinTables": [
@@ -306,7 +367,14 @@
     },
     {
       "EntityType": "FeePayment",
+      "Synonyms": [ "Receipt", "Fee Receipt", "Payment", "Transaction", "Fee Paid", "Collected Fee", "Fee Collection", "Cash Receipt" ],
       "PrimaryTable": "FeePayments",
+      "ClassificationType": "FinancialAnalysis",
+      "OutputRule": {
+        "Always": [ "ReceiptNumber", "PaymentDate", "AmountPaid", "PaymentMode" ],
+        "Optional": [ "TransactionRef" ],
+        "Note": null
+      },
       "IdentifierColumns": [ "PaymentID", "ReceiptNumber", "TransactionRef" ],
       "DisplayColumns": [ "PaymentDate", "AmountPaid", "PaymentMode", "TransactionRef", "ReceiptNumber" ],
       "JoinTables": [
@@ -326,6 +394,7 @@
     },
     {
       "EntityType": "FeeCategory",
+      "Synonyms": [ "Fee Type", "Fee Head", "Fee Group", "Charge Type", "Fee Component", "Fee Name" ],
       "PrimaryTable": "FeeCategories",
       "IdentifierColumns": [ "FeeCategoryID", "CategoryName" ],
       "DisplayColumns": [ "CategoryName", "Description", "IsRefundable", "IsActive" ],
@@ -338,6 +407,7 @@
     },
     {
       "EntityType": "FeeStructure",
+      "Synonyms": [ "Fee Plan", "Fee Schedule", "Fee Chart", "Fee Master", "Fee Breakup", "Class Fee", "Fee Configuration" ],
       "PrimaryTable": "FeeStructure",
       "IdentifierColumns": [ "FeeStructureID" ],
       "DisplayColumns": [ "Amount", "Frequency", "DueDay", "LateFinePerDay" ],
@@ -358,6 +428,7 @@
     },
     {
       "EntityType": "Department",
+      "Synonyms": [ "Division", "Wing", "Faculty", "Unit", "Team", "Branch", "Science Department", "Arts Department", "Commerce Department" ],
       "PrimaryTable": "Departments",
       "IdentifierColumns": [ "DepartmentID", "DeptName", "DeptCode" ],
       "DisplayColumns": [ "DeptName", "DeptCode", "IsActive" ],
@@ -374,6 +445,7 @@
     },
     {
       "EntityType": "Hostel",
+      "Synonyms": [ "Dormitory", "Boarding", "Residential", "Boys Hostel", "Girls Hostel", "Dorm", "Accommodation", "Boarding House" ],
       "PrimaryTable": "Hostels",
       "IdentifierColumns": [ "HostelID", "HostelName" ],
       "DisplayColumns": [ "HostelName", "HostelType", "Capacity", "Address", "IsActive" ],
@@ -390,6 +462,7 @@
     },
     {
       "EntityType": "HostelRoom",
+      "Synonyms": [ "Dorm Room", "Hostel Room", "Boarding Room", "Residential Room", "Room Allocation" ],
       "PrimaryTable": "HostelRooms",
       "IdentifierColumns": [ "RoomID", "RoomNumber" ],
       "DisplayColumns": [ "RoomNumber", "RoomType", "Capacity", "Floor", "IsAvailable" ],
@@ -406,6 +479,7 @@
     },
     {
       "EntityType": "HostelAllocation",
+      "Synonyms": [ "Room Allotment", "Hostel Booking", "Bed Allocation", "Hostel Admission", "Room Assignment", "Boarding Allotment" ],
       "PrimaryTable": "HostelAllocations",
       "IdentifierColumns": [ "AllocationID" ],
       "DisplayColumns": [ "AllocationDate", "VacatingDate", "IsActive" ],
@@ -430,6 +504,7 @@
     },
     {
       "EntityType": "Transport",
+      "Synonyms": [ "Bus Route", "Route", "School Bus", "Pick Up", "Drop", "Conveyance", "Van Route", "Transportation", "Bus Service" ],
       "PrimaryTable": "Routes",
       "IdentifierColumns": [ "RouteID", "RouteName" ],
       "DisplayColumns": [ "RouteName", "StartPoint", "EndPoint", "MorningDepartureTime", "EveningDepartureTime", "IsActive" ],
@@ -443,13 +518,14 @@
           "JoinOn": "Routes.RouteID = RouteStops.RouteID"
         },
         {
-          "Table": "StudentTransport",          
+          "Table": "StudentTransport",
           "JoinOn": "Routes.RouteID = StudentTransport.RouteID"
         }
       ]
     },
     {
       "EntityType": "Vehicle",
+      "Synonyms": [ "Bus", "Van", "School Van", "School Bus", "Minibus", "Transport Vehicle", "GPS Vehicle" ],
       "PrimaryTable": "Vehicles",
       "IdentifierColumns": [ "VehicleID", "VehicleNumber", "GPSTrackerID" ],
       "DisplayColumns": [ "VehicleNumber", "VehicleType", "Model", "Capacity", "InsuranceExpiry", "FitnessExpiry", "IsActive" ],
@@ -466,11 +542,11 @@
       "ColumnEnumValues": {
         "VehicleType": [ "Bus", "Van" ],
         "Model": [ "Tata", "Ashok Leyland" ]
-
       }
     },
     {
       "EntityType": "Parent",
+      "Synonyms": [ "Guardian", "Father", "Mother", "Family", "Caretaker", "Emergency Contact", "Relation" ],
       "PrimaryTable": "StudentParents",
       "IdentifierColumns": [ "ParentID", "AadharNumber" ],
       "DisplayColumns": [ "Name", "Relation", "Occupation", "Education", "Phone", "Email", "IsPrimary" ],
@@ -483,6 +559,7 @@
     },
     {
       "EntityType": "Timetable",
+      "Synonyms": [ "Schedule", "Class Schedule", "Period Schedule", "Time Table", "Routine", "Daily Schedule", "Class Timetable", "Lesson Plan" ],
       "PrimaryTable": "Timetable",
       "IdentifierColumns": [ "TimetableID" ],
       "DisplayColumns": [ "DayOfWeek", "PeriodNumber", "StartTime", "EndTime", "RoomNumber" ],
@@ -507,6 +584,7 @@
     },
     {
       "EntityType": "Homework",
+      "Synonyms": [ "Assignment", "Task", "Home Task", "Class Work", "Project", "Exercise", "Practice Work", "Worksheet" ],
       "PrimaryTable": "HomeworkAssignments",
       "IdentifierColumns": [ "HomeworkID", "Title" ],
       "DisplayColumns": [ "Title", "AssignedDate", "SubmissionDate", "MaxMarks" ],
@@ -531,6 +609,7 @@
     },
     {
       "EntityType": "HomeworkSubmission",
+      "Synonyms": [ "Assignment Submission", "Task Submission", "Submitted Work", "Homework Status", "Submitted Assignment" ],
       "PrimaryTable": "HomeworkSubmissions",
       "IdentifierColumns": [ "SubmissionID" ],
       "DisplayColumns": [ "SubmittedAt", "MarksObtained", "Remarks" ],
@@ -551,6 +630,7 @@
     },
     {
       "EntityType": "Scholarship",
+      "Synonyms": [ "Discount", "Concession", "Fee Waiver", "Financial Aid", "Bursary", "Merit Scholarship", "Fee Discount", "Stipend" ],
       "PrimaryTable": "Scholarships",
       "IdentifierColumns": [ "ScholarshipID", "ScholarshipName" ],
       "DisplayColumns": [ "ScholarshipName", "DiscountType", "DiscountValue", "IsActive" ],
@@ -571,6 +651,7 @@
     },
     {
       "EntityType": "StaffLeave",
+      "Synonyms": [ "Leave", "Leave Application", "Leave Request", "Sick Leave", "Casual Leave", "Earned Leave", "Absence Request", "Staff Absence", "Leave Balance" ],
       "PrimaryTable": "StaffLeave",
       "IdentifierColumns": [ "LeaveID" ],
       "DisplayColumns": [ "LeaveType", "FromDate", "ToDate", "TotalDays", "Reason", "Status" ],
@@ -587,6 +668,7 @@
     },
     {
       "EntityType": "StaffSalary",
+      "Synonyms": [ "Salary", "Payroll", "Salary Slip", "Pay Slip", "Wages", "Compensation", "Monthly Pay", "Staff Pay", "Salary Statement" ],
       "PrimaryTable": "StaffSalary",
       "IdentifierColumns": [ "SalaryID" ],
       "DisplayColumns": [ "Month", "Year", "BasicSalary", "HRA", "DA", "OtherAllowances", "PF", "TDS", "OtherDeductions", "NetSalary", "PaymentDate", "PaymentMode" ],
@@ -599,6 +681,7 @@
     },
     {
       "EntityType": "Library",
+      "Synonyms": [ "Book", "Books", "Library Book", "Reading Material", "Publication", "Novel", "Textbook", "Reference Book", "Catalog" ],
       "PrimaryTable": "Books",
       "IdentifierColumns": [ "BookID", "ISBN", "Title" ],
       "DisplayColumns": [ "Title", "Author", "Publisher", "Edition", "Category", "Language", "TotalCopies", "AvailableCopies", "ShelfLocation", "IsActive" ],
@@ -615,6 +698,7 @@
     },
     {
       "EntityType": "BookIssue",
+      "Synonyms": [ "Book Issued", "Issued Book", "Book Borrowed", "Borrow", "Library Issue", "Book Return", "Due Book", "Library Record", "Book Fine" ],
       "PrimaryTable": "BookIssues",
       "IdentifierColumns": [ "IssueID" ],
       "DisplayColumns": [ "IssueDate", "DueDate", "ReturnDate", "FineAmount", "FinePaid", "BorrowerType" ],
@@ -631,6 +715,7 @@
     },
     {
       "EntityType": "Asset",
+      "Synonyms": [ "Equipment", "Property", "Inventory", "Item", "Furniture", "Computer", "Infrastructure", "School Property", "Fixed Asset" ],
       "PrimaryTable": "Assets",
       "IdentifierColumns": [ "AssetID", "AssetName" ],
       "DisplayColumns": [ "AssetName", "AssetCategory", "PurchaseDate", "PurchasePrice", "Status", "Location" ],
@@ -647,6 +732,7 @@
     },
     {
       "EntityType": "Announcement",
+      "Synonyms": [ "Notice", "Circular", "Notification", "Alert", "Message", "Bulletin", "Broadcast", "Information", "Update" ],
       "PrimaryTable": "Announcements",
       "IdentifierColumns": [ "AnnouncementID", "Title" ],
       "DisplayColumns": [ "Title", "Content", "AudienceType", "Priority", "PublishDate", "ExpiryDate" ],
@@ -659,6 +745,7 @@
     },
     {
       "EntityType": "Event",
+      "Synonyms": [ "Activity", "Function", "Program", "Celebration", "Holiday", "Occasion", "Fest", "Sports Day", "Annual Day", "Cultural Event" ],
       "PrimaryTable": "Events",
       "IdentifierColumns": [ "EventID", "EventName" ],
       "DisplayColumns": [ "EventName", "EventDate", "StartTime", "EndTime", "Venue", "EventType", "IsHoliday" ],
@@ -671,6 +758,7 @@
     },
     {
       "EntityType": "Room",
+      "Synonyms": [ "Classroom", "Lab", "Laboratory", "Hall", "Smart Class", "Computer Room", "Library Room", "Seminar Hall", "Auditorium" ],
       "PrimaryTable": "Rooms",
       "IdentifierColumns": [ "RoomID", "RoomNumber" ],
       "DisplayColumns": [ "RoomNumber", "RoomType", "Floor", "Capacity", "HasProjector", "HasAC", "IsAvailable" ],
@@ -678,6 +766,7 @@
     },
     {
       "EntityType": "School",
+      "Synonyms": [ "Institute", "Institution", "Campus", "Branch", "Organization", "Academy", "School Info", "School Details" ],
       "PrimaryTable": "Schools",
       "IdentifierColumns": [ "SchoolID", "SchoolCode", "SchoolName" ],
       "DisplayColumns": [ "SchoolName", "SchoolCode", "AffiliationBoard", "City", "State", "Phone", "Email", "IsActive" ],

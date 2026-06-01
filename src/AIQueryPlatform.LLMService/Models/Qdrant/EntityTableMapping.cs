@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace AIQueryPlatform.LLMServiceOperator.Models
+namespace AIQueryPlatform.LLMServiceOperator.Models.Qdrant
 {
     public class EntityTableMapping
     {
@@ -14,12 +14,17 @@ namespace AIQueryPlatform.LLMServiceOperator.Models
         public List<string> IdentifierColumns { get; set; } = new();
         public List<string> DisplayColumns { get; set; } = new();
         public Dictionary<string, List<string>> ColumnEnumValues { get; set; } = new();
+        public List<string> Synonyms { get; set; } = new();
+        public string ClassificationType { get; set; } = "Transactional";
+        public EntityOutputRule? OutputRule { get; set; }
     }
 
     public class JoinTableInfo
     {
         public string Table { get; set; } = string.Empty;
         public string JoinOn { get; set; } = string.Empty;
+        public string ForeignKey { get; set; } = "";            
+        public string? ReferenceKey { get; set; }
     }
 
     public class EntityMappingLookupResult
@@ -29,5 +34,13 @@ namespace AIQueryPlatform.LLMServiceOperator.Models
         public List<string> IdentifierColumns { get; set; } = new();
         public List<string> DisplayColumns { get; set; } = new();
         public List<string> AllTables { get; set; } = new(); // primary + joins flattened
+        public EntityOutputRule? OutputRule { get; set; }
+    }
+
+    public class EntityOutputRule
+    {
+        public List<string> Always { get; set; } = new();
+        public List<string> Optional { get; set; } = new();
+        public string? Note { get; set; }
     }
 }

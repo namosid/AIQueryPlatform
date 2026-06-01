@@ -1,4 +1,5 @@
 ﻿using AIQueryPlatform.LLMServiceOperator.Models;
+using AIQueryPlatform.LLMServiceOperator.Services.Qdrant;
 using AIQueryPlatform.LLMServiceOperator.Tools;
 using System;
 using System.Collections.Generic;
@@ -178,6 +179,7 @@ namespace AIQueryPlatform.LLMServiceOperator.Services
         "exam",
         "fee",
         "teacher",
+        "staff",
         "subject",
         "payment",
         "class",
@@ -329,239 +331,140 @@ namespace AIQueryPlatform.LLMServiceOperator.Services
             return 4; // Very Complex
         }
 
-        public List<ClassificationQueryType> Detect(string question)
+        private static readonly Dictionary<string, ClassificationQueryType> EntityToClassification = new()
         {
-            question = question.ToLower();
+            // ── Academic ────────────────────────────────────────────────────
+            { "Exam",               ClassificationQueryType.AcademicAnalysis   },
+            { "ExamResult",         ClassificationQueryType.AcademicAnalysis   },
+            { "ReportCard",         ClassificationQueryType.AcademicAnalysis   },
+            { "Subject",            ClassificationQueryType.AcademicAnalysis   },
 
-            var types = new List<ClassificationQueryType>();
+            // ── Attendance ──────────────────────────────────────────────────
+            { "Attendance",         ClassificationQueryType.AttendanceAnalysis },
 
-            // =====================================
-            // Transactional
-            // =====================================
+            // ── Financial ───────────────────────────────────────────────────
+            { "Fee",                ClassificationQueryType.FinancialAnalysis  },
+            { "FeePayment",         ClassificationQueryType.FinancialAnalysis  },
+            { "StaffSalary",        ClassificationQueryType.FinancialAnalysis  },
+            { "Scholarship",        ClassificationQueryType.FinancialAnalysis  },
 
-            if (question.Contains("show") ||
-                question.Contains("get") ||
-                question.Contains("find"))
-            {
-                types.Add(ClassificationQueryType.Transactional);
-            }
+            // ── Transactional (people, scope, structure) ────────────────────
+            { "Student",            ClassificationQueryType.Transactional      },
+            { "Teacher",            ClassificationQueryType.Transactional      },
+            { "Staff",              ClassificationQueryType.Transactional      },
+            { "Parent",             ClassificationQueryType.Transactional      },
+            { "Class",              ClassificationQueryType.Transactional      },
+            { "Section",            ClassificationQueryType.Transactional      },
+            { "Department",         ClassificationQueryType.Transactional      },
+            { "AcademicYear",       ClassificationQueryType.Transactional      },
 
-            // =====================================
-            // Aggregation
-            // =====================================
-
-            if (question.Contains("count") ||
-                question.Contains("sum") ||
-                question.Contains("average") ||
-                question.Contains("avg") ||
-                question.Contains("total") ||
-                question.Contains("highest") ||
-                question.Contains("lowest"))
-            {
-                types.Add(ClassificationQueryType.Aggregation);
-            }
-
-            // =====================================
-            // Trend Analysis
-            // =====================================
-
-            if (question.Contains("trend") ||
-                question.Contains("increase") ||
-                question.Contains("decrease") ||
-                question.Contains("decline") ||
-                question.Contains("declined") ||
-                question.Contains("dropped") ||
-                question.Contains("improved") ||
-                question.Contains("growth") ||
-                question.Contains("continuously"))
-            {
-                types.Add(ClassificationQueryType.TrendAnalysis);
-            }
-
-            // =====================================
-            // Comparative Analysis
-            // =====================================
-
-            if (question.Contains("compare") ||
-                question.Contains("vs") ||
-                question.Contains("better") ||
-                question.Contains("worse"))
-            {
-                types.Add(ClassificationQueryType.ComparativeAnalysis);
-            }
-
-            // =====================================
-            // Predictive Analysis
-            // =====================================
-
-            if (question.Contains("predict") ||
-                question.Contains("forecast") ||
-                question.Contains("likely") ||
-                question.Contains("risk"))
-            {
-                types.Add(ClassificationQueryType.PredictiveAnalysis);
-            }
-
-            // =====================================
-            // Dashboard
-            // =====================================
-
-            if (question.Contains("dashboard") ||
-                question.Contains("summary") ||
-                question.Contains("overview"))
-            {
-                types.Add(ClassificationQueryType.Dashboard);
-            }
-
-            // =====================================
-            // Ranking
-            // =====================================
-
-            if (question.Contains("top") ||
-                question.Contains("rank") ||
-                question.Contains("highest") ||
-                question.Contains("lowest"))
-            {
-                types.Add(ClassificationQueryType.Ranking);
-            }
-
-            // =====================================
-            // TimeSeries
-            // =====================================
-
-            if (Regex.IsMatch(question, @"last\s+\d+") ||
-                question.Contains("monthly") ||
-                question.Contains("yearly") ||
-                question.Contains("historical") ||
-                question.Contains("over time"))
-            {
-                types.Add(ClassificationQueryType.TimeSeries);
-            }
-
-            // =====================================
-            // DrillDown
-            // =====================================
-
-            if (question.Contains("details") ||
-                question.Contains("breakdown"))
-            {
-                types.Add(ClassificationQueryType.DrillDown);
-            }
-
-            // =====================================
-            // Statistical
-            // =====================================
-
-            if (question.Contains("median") ||
-                question.Contains("variance") ||
-                question.Contains("distribution"))
-            {
-                types.Add(ClassificationQueryType.Statistical);
-            }
-
-            // =====================================
-            // Exception Detection
-            // =====================================
-
-            if (question.Contains("anomaly") ||
-                question.Contains("abnormal") ||
-                question.Contains("exception"))
-            {
-                types.Add(ClassificationQueryType.ExceptionDetection);
-            }
-
-            // =====================================
-            // Correlation Analysis
-            // =====================================
-
-            if (question.Contains("correlation") ||
-                question.Contains("relationship"))
-            {
-                types.Add(ClassificationQueryType.CorrelationAnalysis);
-            }
-
-            // =====================================
-            // Financial Analysis
-            // =====================================
-
-            if (question.Contains("fee") ||
-                question.Contains("payment") ||
-                question.Contains("revenue"))
-            {
-                types.Add(ClassificationQueryType.FinancialAnalysis);
-            }
-
-            // =====================================
-            // Academic Analysis
-            // =====================================
-
-            if (question.Contains("exam") ||
-                question.Contains("marks") ||
-                question.Contains("performance"))
-            {
-                types.Add(ClassificationQueryType.AcademicAnalysis);
-            }
-
-            // =====================================
-            // Attendance Analysis
-            // =====================================
-
-            if (question.Contains("attendance"))
-            {
-                types.Add(ClassificationQueryType.AttendanceAnalysis);
-            }
-
-            // =====================================
-            // Multi Entity Analysis
-            // =====================================
-
-            int entityCount = 0;
-
-            string[] entities =
-            {
-            "student",
-            "attendance",
-            "exam",
-            "fee",
-            "teacher",
-            "staff",
-            "subject",
-            "class",   
-            "section",
-            "payment",
-            "result",
-            "scholarship",
-            "transport",
-            "library",
-            "hostel",
-            "sports",
-            "activity",
-            "event",
-            "grade",
-            "performance",
-            "vehicle",
-            "route",
-            "driver",
-            "guardian",
-            "department",
-            "course",
-            "asset",
-            "inventory"
-
+            // ── Not yet in schema — map to Transactional as placeholder ─────
+            { "Hostel",             ClassificationQueryType.Transactional      },
+            { "HostelRoom",         ClassificationQueryType.Transactional      },
+            { "HostelAllocation",   ClassificationQueryType.Transactional      },
+            { "Transport",          ClassificationQueryType.Transactional      },
+            { "Vehicle",            ClassificationQueryType.Transactional      },
+            { "Timetable",          ClassificationQueryType.Transactional      },
+            { "Homework",           ClassificationQueryType.Transactional      },
+            { "HomeworkSubmission", ClassificationQueryType.Transactional      },
+            { "Library",            ClassificationQueryType.Transactional      },
+            { "BookIssue",          ClassificationQueryType.Transactional      },
+            { "Asset",              ClassificationQueryType.Transactional      },
+            { "Event",              ClassificationQueryType.Transactional      },
+            { "Announcement",       ClassificationQueryType.Transactional      },
         };
 
-            foreach (var entity in entities)
+        public List<ClassificationQueryType> Detect(string question)
+        {
+            var q = question.ToLower();
+            var types = new HashSet<ClassificationQueryType>();
+
+            // ── Step 1: Entity-driven classification via EntityDetector.Rules ────
+            var detectedEntities = EntityDetector.Rules
+                .Where(r => r.Pattern.IsMatch(question))
+                .Select(r => r.EntityType)
+                .Distinct()
+                .ToList();
+
+            foreach (var entity in detectedEntities)
             {
-                if (question.Contains(entity))
-                {
-                    entityCount++;
-                }
+                if (EntityToClassification.TryGetValue(entity, out var classType))
+                    types.Add(classType);
             }
 
+            // ── Step 2: Intent-driven classification (no entity equivalent) ──────
+            bool HasWord(string word) =>
+                Regex.IsMatch(q, $@"\b{Regex.Escape(word)}\b");
+
+            // Layer 3: Broad domain keyword list — catches anything not yet in JSON
+            string[] domainKeywords = {
+                "student", "attendance", "exam", "fee", "teacher", "staff",
+                "subject", "class", "section", "payment", "result", "scholarship",
+                "transport", "library", "hostel", "sports", "activity", "event",
+                "grade", "performance", "vehicle", "route", "driver", "guardian",
+                "department", "course", "asset", "inventory"
+            };
+
+            int layer1 = detectedEntities.Count;
+            int layer2 = domainKeywords.Count(e => HasWord(e));
+            int entityCount = Math.Max(layer1, layer2);
+
             if (entityCount >= 3)
-            {
                 types.Add(ClassificationQueryType.MultiEntityAnalysis);
-            }
+
+            // Aggregation
+            if (HasWord("total") || HasWord("count") || HasWord("sum") ||
+                HasWord("average") || HasWord("avg") ||
+                Regex.IsMatch(q, @"\b(what|how much|how many).*(highest|lowest)\b"))
+                types.Add(ClassificationQueryType.Aggregation);
+
+            // Ranking
+            if (HasWord("rank") ||
+                Regex.IsMatch(q, @"\btop\s+\d+\b") ||
+                Regex.IsMatch(q, @"\b(who|which).*(highest|lowest)\b"))
+                types.Add(ClassificationQueryType.Ranking);
+
+            // Trend
+            if (HasWord("trend") || HasWord("growth") || HasWord("increase") ||
+                HasWord("decrease") || HasWord("decline") || HasWord("dropped") ||
+                HasWord("improved"))
+                types.Add(ClassificationQueryType.TrendAnalysis);
+
+            // TimeSeries
+            if (HasWord("monthly") || HasWord("yearly") || HasWord("daily") ||
+                HasWord("weekly") || HasWord("quarterly") || HasWord("historical") ||
+                q.Contains("over time") ||
+                Regex.IsMatch(q, @"\b(last|past|previous)\s+(week|month|year|quarter|\d+)\b"))
+                types.Add(ClassificationQueryType.TimeSeries);
+
+            // Dashboard
+            if (HasWord("dashboard") || HasWord("summary") ||
+                HasWord("overview") || HasWord("report"))
+                types.Add(ClassificationQueryType.Dashboard);
+
+            // Comparative
+            if (HasWord("compare") || HasWord("versus") || HasWord("better") || HasWord("worse"))
+                types.Add(ClassificationQueryType.ComparativeAnalysis);
+
+            // DrillDown
+            if (HasWord("details") || HasWord("breakdown"))
+                types.Add(ClassificationQueryType.DrillDown);
+
+            // Statistical
+            if (HasWord("median") || HasWord("variance") || HasWord("distribution"))
+                types.Add(ClassificationQueryType.Statistical);
+
+            // Exception
+            if (HasWord("anomaly") || HasWord("abnormal") || HasWord("exception"))
+                types.Add(ClassificationQueryType.ExceptionDetection);
+
+            // Predictive
+            if (HasWord("predict") || HasWord("forecast") || HasWord("likely") || HasWord("risk"))
+                types.Add(ClassificationQueryType.PredictiveAnalysis);
+
+            // ── Step 4: Transactional fallback ───────────────────────────────────
+            if (types.Count == 0)
+                types.Add(ClassificationQueryType.Transactional);
 
             return types.Distinct().ToList();
         }
