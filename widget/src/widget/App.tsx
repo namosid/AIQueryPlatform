@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { WidgetConfig, AIInsight, WidgetState } from '../types';
 import APIService from '../services/api';
+import { ModalAPIService } from '../services/modalApi';
 import FloatingButton from '../components/FloatingButton';
 import WidgetPanel from '../components/WidgetPanel';
 
@@ -15,9 +16,11 @@ const App: React.FC<AppProps> = ({ config }) => {
     insights: [],
     error: null,
     lastUpdated: null,
+    conversationId: null,
   });
 
   const [apiService] = useState(() => new APIService(config));
+  const [modalApiService] = useState(() => new ModalAPIService(config));
 
   // Load insights on mount or when opened
   useEffect(() => {
@@ -57,12 +60,37 @@ const App: React.FC<AppProps> = ({ config }) => {
 
   const handleQuery = async (query: string): Promise<any> => {
     try {
-      const response = await apiService.executeQuery(query);
-      return response;
+      // Create conversation if doesn't exist
+      if (!state.conversationId) {
+        console.log('[Widget] Creating new conversation for widget query');
+        const conversation = await modalApiService.createConversation('Quick Query');
+        setState((prev: WidgetState) => ({
+          ...prev,
+          conversationId: conversation.id,
+        }));
+        
+        // Execute query in the new conversation
+        const response = await modalApiService.executeQueryInConversation(conversation.id, query);
+        return {
+          success: true,
+          data: response.queryResult,
+        };
+      } else {
+        // Use existing conversation
+        console.log('[Widget] Using existing conversation:', state.conversationId);
+        const response = await modalApiService.executeQueryInConversation(state.conversationId, query);
+        return {
+          success: true,
+          data: response.queryResult,
+        };
+      }
     } catch (error) {
+      console.error('[Widget] Query failed:', error);
       throw error;
     }
   };
+
+  const getConversationId = () => state.conversationId;
 
   return (
     <div className={`ai-widget-container theme-${config.theme}`}>
@@ -83,6 +111,7 @@ const App: React.FC<AppProps> = ({ config }) => {
           onClose={toggleWidget}
           onRefresh={handleRefresh}
           onQuery={handleQuery}
+          getConversationId={getConversationId}
         />
       )}
     </div>

@@ -72,6 +72,7 @@ interface WidgetPanelProps {
   onClose: () => void;
   onRefresh: () => void;
   onQuery: (query: string) => Promise<any>;
+  getConversationId: () => string | null;
 }
 
 const WidgetPanel: React.FC<WidgetPanelProps> = ({
@@ -80,6 +81,7 @@ const WidgetPanel: React.FC<WidgetPanelProps> = ({
   onClose,
   onRefresh,
   onQuery,
+  getConversationId,
 }) => {
   const [queryResult, setQueryResult] = useState<any>(null);
   const [isQuerying, setIsQuerying] = useState(false);
@@ -110,14 +112,19 @@ const WidgetPanel: React.FC<WidgetPanelProps> = ({
     console.log('[WidgetPanel] queryResult:', queryResult);
     console.log('[WidgetPanel] insights:', state.insights);
     
-    // Build context object
+    const conversationId = getConversationId();
+    console.log('[WidgetPanel] Current conversation ID:', conversationId);
+    
+    // Build context object with conversation ID
     const context = {
+      conversationId: conversationId || undefined,
       query: lastQuery || undefined,
       insights: state.insights && state.insights.length > 0 ? state.insights : undefined,
       queryResult: queryResult || undefined,
     };
     
     console.log('[WidgetPanel] Opening modal with context:', context);
+    console.log('[WidgetPanel] Context.conversationId:', context.conversationId);
     console.log('[WidgetPanel] Context.query:', context.query);
     console.log('[WidgetPanel] Context.insights:', context.insights);
     console.log('[WidgetPanel] Context.queryResult:', context.queryResult);

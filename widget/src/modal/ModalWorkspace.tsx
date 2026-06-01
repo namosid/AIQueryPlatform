@@ -156,24 +156,37 @@ const ModalWorkspace: React.FC<ModalWorkspaceProps> = ({ config, context: initia
   const handleInitialQuery = async (context: ModalContext) => {
     console.log('[ModalWorkspace] handleInitialQuery called with context:', context);
     try {
-      // Create new conversation
-      console.log('[ModalWorkspace] Creating new conversation...');
-      const newConversation = await createConversation();
-      console.log('[ModalWorkspace] Conversation created:', newConversation);
-      
-      // Send the query if available - pass the conversation directly to avoid state timing issues
-      if (context.query) {
-        console.log('[ModalWorkspace] Sending initial query:', context.query);
-        console.log('[ModalWorkspace] Using conversation:', newConversation.id);
-        await sendMessage(context.query, newConversation);
-        console.log('[ModalWorkspace] Query sent successfully');
+      // Check if we have an existing conversation ID from widget
+      if (context.conversationId) {
+        console.log('[ModalWorkspace] Loading existing conversation:', context.conversationId);
+        await loadConversation(context.conversationId);
         
-        // Refresh token usage after query completes
-        setTokenRefreshTrigger(prev => prev + 1);
-      } else if (context.queryResult?.data?.result) {
-        // If we have query result from widget, display it
-        console.log('[ModalWorkspace] Displaying widget query result');
-        // The query result is already in context, will be displayed
+        // If there's a new query, send it to the existing conversation
+        if (context.query) {
+          console.log('[ModalWorkspace] Sending query to existing conversation:', context.query);
+          await sendMessage(context.query);
+          setTokenRefreshTrigger(prev => prev + 1);
+        }
+      } else {
+        // Create new conversation
+        console.log('[ModalWorkspace] Creating new conversation...');
+        const newConversation = await createConversation();
+        console.log('[ModalWorkspace] Conversation created:', newConversation);
+        
+        // Send the query if available - pass the conversation directly to avoid state timing issues
+        if (context.query) {
+          console.log('[ModalWorkspace] Sending initial query:', context.query);
+          console.log('[ModalWorkspace] Using conversation:', newConversation.id);
+          await sendMessage(context.query, newConversation);
+          console.log('[ModalWorkspace] Query sent successfully');
+          
+          // Refresh token usage after query completes
+          setTokenRefreshTrigger(prev => prev + 1);
+        } else if (context.queryResult?.data?.result) {
+          // If we have query result from widget, display it
+          console.log('[ModalWorkspace] Displaying widget query result');
+          // The query result is already in context, will be displayed
+        }
       }
     } catch (error) {
       console.error('[ModalWorkspace] Failed to handle initial query:', error);

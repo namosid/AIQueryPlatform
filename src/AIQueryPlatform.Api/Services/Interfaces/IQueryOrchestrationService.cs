@@ -4,6 +4,6 @@ namespace AIQueryPlatform.Api.Services.Interfaces;
 
 public interface IQueryOrchestrationService
 {
-    IAsyncEnumerable<StreamEvent> ExecuteQueryStreamAsync(string query);
-    Task<QueryResponse> ExecuteQueryAsync(string query);
+    IAsyncEnumerable<StreamEvent> ExecuteQueryStreamAsync(string query, string? conversationId = null);
+    Task<QueryResponse> ExecuteQueryAsync(string query, string? conversationId = null);
 }

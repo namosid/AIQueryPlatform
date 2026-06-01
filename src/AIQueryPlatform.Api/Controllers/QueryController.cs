@@ -72,7 +72,7 @@ public class QueryController : ControllerBase
             _logger.LogInformation("User role: {UserRole}", request.UserRole);
         }
 
-        await foreach (var streamEvent in _orchestrationService.ExecuteQueryStreamAsync(request.Query))
+        await foreach (var streamEvent in _orchestrationService.ExecuteQueryStreamAsync(request.Query, request.ConversationId))
         {
             yield return JsonSerializer.Serialize(streamEvent, JsonOptions);
         }
@@ -108,7 +108,7 @@ public class QueryController : ControllerBase
             _logger.LogInformation("User role: {UserRole}", request.UserRole);
         }
 
-        var response = await _orchestrationService.ExecuteQueryAsync(request.Query);
+        var response = await _orchestrationService.ExecuteQueryAsync(request.Query, request.ConversationId);
 
         if (!response.Success)
         {
@@ -139,7 +139,7 @@ public class QueryController : ControllerBase
         var tenant = _tenantContext.CurrentTenant!;
 
         // Execute query
-        var response = await _orchestrationService.ExecuteQueryAsync(request.Query);
+        var response = await _orchestrationService.ExecuteQueryAsync(request.Query, request.ConversationId);
 
         if (!response.Success || response.Result == null)
         {
@@ -183,6 +183,12 @@ public class QueryController : ControllerBase
             return Unauthorized(new { error = "No tenant context" });
         }
 
+        // Log conversationId if provided
+        if (!string.IsNullOrWhiteSpace(request.ConversationId))
+        {
+            _logger.LogInformation("Generating PDF report for conversation {ConversationId}", request.ConversationId);
+        }
+
         var tenant = _tenantContext.CurrentTenant!;
 
         // Generate PDF using provided data
@@ -208,7 +214,7 @@ public class QueryController : ControllerBase
             return BadRequest(new { error = "Query cannot be empty" });
         }
 
-        var response = await _orchestrationService.ExecuteQueryAsync(request.Query);
+        var response = await _orchestrationService.ExecuteQueryAsync(request.Query, request.ConversationId);
 
         if (!response.Success || response.Result == null)
         {

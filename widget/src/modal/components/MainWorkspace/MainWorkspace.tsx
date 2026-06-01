@@ -106,7 +106,7 @@ const MainWorkspace: React.FC<MainWorkspaceProps> = ({
     console.log('[MainWorkspace] Exporting PDF with chartData:', chartData);
 
     try {
-      const blob = await apiService.generatePDF(query, sql, resultData, chartData);
+      const blob = await apiService.generatePDF(query, sql, resultData, chartData, conversation?.id);
       
       // Download the PDF
       const url = URL.createObjectURL(blob);

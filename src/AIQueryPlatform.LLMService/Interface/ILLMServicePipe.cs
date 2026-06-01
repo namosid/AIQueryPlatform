@@ -9,6 +9,6 @@ namespace AIQueryPlatform.LLMServiceOperator.Interface
 {
     public interface ILLMServicePipe
     {
-        Task<LLMResponse> ProcessQuery(string query, TenantData tenant);
+        Task<LLMResponse> ProcessQuery(string query, TenantData tenant, string? conversationId = null);
     }
 }

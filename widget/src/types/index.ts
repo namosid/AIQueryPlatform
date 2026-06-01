@@ -26,6 +26,7 @@ export interface QueryRequest {
   context: string;
   tenantId: string;
   userRole: string;
+  conversationId?: string;
 }
 
 export interface QueryResponse {
@@ -60,6 +61,7 @@ export interface WidgetState {
   insights: AIInsight[];
   error: string | null;
   lastUpdated: string | null;
+  conversationId: string | null;
 }
 
 export interface SuggestedQuery {
