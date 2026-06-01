@@ -22,9 +22,7 @@
     <PackageReference Include="Npgsql" Version="8.0.2" />
     <PackageReference Include="System.Data.OleDb" Version="8.0.0" />
   </ItemGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\AIQueryPlatform.LLMService\AIQueryPlatform.LLMServiceOperator.csproj" />
   </ItemGroup>
-
 </Project>

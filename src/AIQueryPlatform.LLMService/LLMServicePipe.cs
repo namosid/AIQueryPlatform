@@ -81,7 +81,7 @@ namespace AIQueryPlatform.LLMServiceOperator
                 var clarificationAgent = new ClarificationAgent(clarificationRegistry);
 
                 // short term memory for follow-up detection and context enrichment
-                var memory = new ShortTermMemory(conversationId == null ? tenant.TenantId : conversationId);
+                var memory = new ShortTermMemory(tenant.ConversationID == null ? tenant.TenantId : tenant.ConversationID);
 
                 if (memory.GetLatestTurn()?.UserInput == userPrompt)
                 {

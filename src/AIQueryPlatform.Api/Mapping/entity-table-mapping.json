@@ -94,7 +94,7 @@
       "PrimaryTable": "Classes",
       "ClassificationType": "Transactional",
       "OutputRule": {
-        "Always": [ "ClassID", "ClassName","SectionName" ],
+        "Always": [ "ClassID", "ClassName","SectionName","SectionID" ],
         "Optional": [],
         "Note": "Prefer class names over IDs"
       },

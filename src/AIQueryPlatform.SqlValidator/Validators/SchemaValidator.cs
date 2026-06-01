@@ -39,12 +39,20 @@ public class SchemaValidator(DatabaseSchema schema)
 
         var upper = sql.ToUpperInvariant();
 
+        // ── Extract CTE names (excluded from all schema checks) ───────────
+        var cteNames = ExtractCteNames(sql);
+
         // ── Build alias → table map ────────────────────────────────────────
         var aliasMap = BuildAliasMap(sql);
 
+        // ── Filter aliasMap to real tables only (no CTEs) ─────────────────
+        var realAliasMap = aliasMap
+            .Where(kv => !cteNames.Contains(kv.Key))
+            .ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.OrdinalIgnoreCase);
+
         // ── Check 1: All referenced tables exist ──────────────────────────
         var missingTables = new List<string>();
-        foreach (var (tableName, _) in aliasMap)
+        foreach (var (tableName, _) in realAliasMap)
         {
             if (schema.GetTable(tableName) is null)
                 missingTables.Add(tableName);
@@ -72,31 +80,33 @@ public class SchemaValidator(DatabaseSchema schema)
             var columnName = match.Groups[2].Value;
 
             // Resolve alias → actual table name
-            var tableName = aliasMap
+            var tableName = realAliasMap
                 .FirstOrDefault(kv => kv.Value.Equals(prefix, StringComparison.OrdinalIgnoreCase))
                 .Key ?? prefix;
+
+            // Skip if this resolves to a CTE (columns inside CTEs are
+            // validated by their inner SELECT, not by schema directly)
+            if (cteNames.Contains(tableName))
+                continue;
 
             var tableSchema = schema.GetTable(tableName);
             if (tableSchema is null) continue; // already flagged in Check 1
 
             if (tableSchema.GetColumn(columnName) is null)
             {
-                // Check if this column exists in another table in the schema
                 var columnInOtherTable = schema.Tables
-                .Where(t => !t.TableName.Equals(tableSchema.TableName, StringComparison.OrdinalIgnoreCase))
-                .Select(t => new { Table = t, Column = t.GetColumn(columnName) })
-                .Where(x => x.Column is not null)
-                // ✅ Prioritize: PK first, then FK, then any column
-                .OrderByDescending(x => x.Column.IsPrimaryKey)
-                .ThenByDescending(x => !x.Column.IsForeignKey)
-                .FirstOrDefault();
+                    .Where(t => !t.TableName.Equals(tableSchema.TableName, StringComparison.OrdinalIgnoreCase))
+                    .Select(t => new { Table = t, Column = t.GetColumn(columnName) })
+                    .Where(x => x.Column is not null)
+                    .OrderByDescending(x => x.Column.IsPrimaryKey)
+                    .ThenByDescending(x => !x.Column.IsForeignKey)
+                    .FirstOrDefault();
 
                 string suggestion;
 
                 if (columnInOtherTable is not null)
                 {
-                    // Column exists in another table — check if that table is already joined
-                    var isAlreadyJoined = aliasMap.Keys.Any(k =>
+                    var isAlreadyJoined = realAliasMap.Keys.Any(k =>
                         k.Equals(columnInOtherTable.Table.TableName, StringComparison.OrdinalIgnoreCase));
 
                     suggestion = isAlreadyJoined
@@ -109,7 +119,6 @@ public class SchemaValidator(DatabaseSchema schema)
                 }
                 else
                 {
-                    // Column not found anywhere — fall back to similar name suggestion
                     var similar = SuggestSimilar(columnName, tableSchema.Columns.Select(c => c.ColumnName));
                     suggestion = similar is not null
                         ? $"Did you mean '{tableSchema.TableName}.{similar}'?"
@@ -124,27 +133,41 @@ public class SchemaValidator(DatabaseSchema schema)
                     Message = $"Column '{columnName}' does not exist in table '{tableSchema.TableName}'.",
                     Suggestion = suggestion
                 };
-                if (IsAddIssue(issue, result.Issues))
-                {
-                    result.Issues.Add(issue);
-                }
 
+                if (IsAddIssue(issue, result.Issues))
+                    result.Issues.Add(issue);
             }
         }
 
         // ── Check 3: JOIN ON key types are compatible ──────────────────────
-        ValidateJoinKeys(sql, aliasMap, result);
+        ValidateJoinKeys(sql, realAliasMap, result);
 
         // ── Check 4: WHERE clause references valid columns ─────────────────
-        ValidateWhereColumns(sql, aliasMap, result);
+        ValidateWhereColumns(sql, realAliasMap, result);
 
         // ── Check 5: ORDER BY columns exist ───────────────────────────────
-        ValidateOrderByColumns(sql, aliasMap, result);
+        ValidateOrderByColumns(sql, realAliasMap, result);
 
         if (result.IsValid)
             result.SuggestedNextState = TurnState.RefinedQuery;
 
         return result;
+    }
+
+    // ── Extracts all CTE names from a WITH clause ──────────────────────────
+    private static HashSet<string> ExtractCteNames(string sql)
+    {
+        var cteNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        // Matches both:  WITH CteA AS (   and   , CteB AS (
+        var matches = Regex.Matches(sql,
+            @"(?:(?:^|;)\s*WITH\s+|,\s*)(\w+)\s+AS\s*\(",
+            RegexOptions.IgnoreCase | RegexOptions.Multiline);
+
+        foreach (Match m in matches)
+            cteNames.Add(m.Groups[1].Value);
+
+        return cteNames;
     }
 
     public bool IsAddIssue(ValidationIssue issue, List<ValidationIssue> Issues)

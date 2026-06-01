@@ -309,7 +309,8 @@ public class QueryOrchestrationService : IQueryOrchestrationService
                 TenantId = tenant.TenantId.ToString(),
                 TenantName = tenant.Name,
                 SchemaFile = tenant.SchemaFile,
-                MappingFile = tenant.MappingFile
+                MappingFile = tenant.MappingFile,
+                ConversationID = conversationId ?? Guid.NewGuid().ToString()
             };
 
             // Using the new LLMServicePipe to process the query through the entire pipeline

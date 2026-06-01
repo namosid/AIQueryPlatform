@@ -118,18 +118,25 @@ namespace AIQueryPlatform.LLMServiceOperator.Services.Qdrant
                 }
 
                 // From IdentifierColumns (needed for WHERE clauses)
-                //foreach (var col in mapping.IdentifierColumns)
-                //    requiredColumns.Add(col);
+                foreach (var col in mapping.IdentifierColumns)
+                    requiredColumns.Add(col);
 
                 // Only add join tables whose columns appear in requiredColumns
-                // Only add join tables whose columns overlap with requiredColumns
                 foreach (var join in mapping.JoinTables)
                 {
                     var joinEntityMapping = _mappings.Values
                         .FirstOrDefault(m => m.PrimaryTable.Equals(
                             join.Table, StringComparison.OrdinalIgnoreCase));
+                    if (joinEntityMapping != null)
+                    {
+                        var joinColumns = joinEntityMapping.DisplayColumns
+                            .Concat(joinEntityMapping.IdentifierColumns)
+                            .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-                   if (_schemaColumns.TryGetValue(join.Table, out var schemaColumns))
+                        if (joinColumns.Overlaps(requiredColumns))
+                            tables.Add(join.Table);
+                    }
+                    else if (_schemaColumns.TryGetValue(join.Table, out var schemaColumns))
                     {
                         if (schemaColumns.Overlaps(requiredColumns))
                             tables.Add(join.Table);
