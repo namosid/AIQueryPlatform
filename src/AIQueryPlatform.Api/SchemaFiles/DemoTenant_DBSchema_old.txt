@@ -359,13 +359,6 @@ Table: Schools
   - CreatedAt (datetime) NOT NULL
   PK: SchoolID
 
-Table: DocumentMaster
-  - DocumentID (int) NOT NULL
-  - DocumentName (nvarchar) NOT NULL
-  - IsMandatory (bit) NOT NULL
-  - DocumentType (nvarchar) NULL
-  PK: DocumentID
-
 Table: ReportCards
   - ReportCardID (int) NOT NULL
   - StudentID (int) NOT NULL
@@ -382,20 +375,6 @@ Table: ReportCards
   PK: ReportCardID
   FK: ExamTypeID → ExamTypes.ExamTypeID
   FK: AcademicYearID → AcademicYears.AcademicYearID
-  FK: StudentID → Students.StudentID
-
-Table: StudentDocuments
-  - StudentDocumentID (int) NOT NULL
-  - StudentID (int) NOT NULL
-  - DocumentID (int) NOT NULL
-  - DocumentNo (nvarchar) NULL
-  - FilePath (nvarchar) NULL
-  - IssueDate (date) NULL
-  - ExpiryDate (date) NULL
-  - Remarks (nvarchar) NULL
-  - CreatedOn (datetime) NOT NULL
-  PK: StudentDocumentID
-  FK: DocumentID → DocumentMaster.DocumentID
   FK: StudentID → Students.StudentID
 
 Table: AcademicYears
@@ -419,12 +398,6 @@ Table: Departments
   FK: SchoolID → Schools.SchoolID
   FK: HeadStaffID → Staff.StaffID
 
-Table: StaffDocumentMaster
-  - DocumentID (int) NOT NULL
-  - DocumentName (nvarchar) NOT NULL
-  - IsMandatory (bit) NOT NULL
-  PK: DocumentID
-
 Table: FeeCategories
   - FeeCategoryID (int) NOT NULL
   - SchoolID (int) NOT NULL
@@ -434,20 +407,6 @@ Table: FeeCategories
   - IsActive (bit) NOT NULL
   PK: FeeCategoryID
   FK: SchoolID → Schools.SchoolID
-
-Table: StaffDocuments
-  - StaffDocumentID (int) NOT NULL
-  - StaffID (int) NOT NULL
-  - DocumentID (int) NOT NULL
-  - DocumentNo (nvarchar) NULL
-  - FilePath (nvarchar) NULL
-  - IssueDate (date) NULL
-  - ExpiryDate (date) NULL
-  - Remarks (nvarchar) NULL
-  - CreatedOn (datetime) NOT NULL
-  PK: StaffDocumentID
-  FK: DocumentID → StaffDocumentMaster.DocumentID
-  FK: StaffID → Staff.StaffID
 
 Table: Classes
   - ClassID (int) NOT NULL
@@ -519,6 +478,18 @@ Table: FeeInvoices
   PK: InvoiceID
   FK: AcademicYearID → AcademicYears.AcademicYearID
   FK: StudentID → Students.StudentID
+
+Table: StaffDocuments
+  - DocumentID (int) NOT NULL
+  - StaffID (int) NOT NULL
+  - DocumentType (varchar) NOT NULL
+  - DocumentNumber (varchar) NULL
+  - FilePath (nvarchar) NULL
+  - UploadedAt (datetime) NOT NULL
+  - VerifiedBy (int) NULL
+  PK: DocumentID
+  FK: StaffID → Staff.StaffID
+  FK: VerifiedBy → Staff.StaffID
 
 Table: FeePayments
   - PaymentID (int) NOT NULL

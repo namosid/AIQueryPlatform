@@ -40,12 +40,17 @@
         {
           "Table": "Nationalities",
           "JoinOn": "Students.NationalityID = Nationalities.NationalityID"
+        },
+        {
+          "Table": "StudentDocuments",
+          "JoinOn": "Students.StudentID = StudentDocuments.StudentID"
         }
       ],
       "ColumnEnumValues": {
         "MotherTongue": [ "Hindi", "English", "Punjabhi", "Telgu", "Tamil" ],
         "Gender": [ "Male", "Female", "Other" ],
-        "BloodGroup": [ "A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-" ]
+        "BloodGroup": [ "A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-" ],
+        "ClassName": [ "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6", "Grade 7", "Grade 8", "Grade 9", "Grade 10", "Grade 11", "Grade 12" ]
       }
     },
     {
@@ -94,7 +99,7 @@
       "PrimaryTable": "Classes",
       "ClassificationType": "Transactional",
       "OutputRule": {
-        "Always": [ "ClassID", "ClassName","SectionName","SectionID" ],
+        "Always": [ "ClassID", "ClassName", "SectionName", "SectionID" ],
         "Optional": [],
         "Note": "Prefer class names over IDs"
       },
@@ -113,7 +118,10 @@
           "Table": "ClassSubjects",
           "JoinOn": "Sections.SectionID = ClassSubjects.SectionID"
         }
-      ]
+      ],
+      "ColumnEnumValues": {
+        "ClassName": [ "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6", "Grade 7", "Grade 8", "Grade 9", "Grade 10", "Grade 11", "Grade 12" ]
+      }
     },
     {
       "EntityType": "Section",
@@ -140,7 +148,10 @@
           "Table": "Staff",
           "JoinOn": "Sections.ClassTeacherID = Staff.StaffID"
         }
-      ]
+      ],
+      "SectionEnumValues": {
+        "SectionName": [ "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L" ]
+      }
     },
     {
       "EntityType": "Subject",
@@ -784,6 +795,114 @@
           "JoinOn": "Schools.SchoolID = Departments.SchoolID"
         }
       ]
+    },
+    {
+      "EntityType": "StudentDocument",
+      "Synonyms": [
+        "student documents",
+        "admission form",
+        "transfer certificate",
+        "tc",
+        "bonafide certificate",
+        "character certificate",
+        "marksheet",
+        "mark sheet",
+        "grade card",
+        "report card",
+        "progress report",
+        "leaving certificate",
+        "fee receipt",
+        "birth certificate",
+        "student record",
+        "student file",
+        "student profile",
+        "id card",
+        "library card",
+        "scholarship form"
+      ],
+      "PrimaryTable": "StudentDocuments",
+      "IdentifierColumns": [ "StudentID", "DocumentID" ],
+      "DisplayColumns": [ "DocumentName", "IssueDate" ],
+      "JoinTables": [
+        {
+          "Table": "Students",
+          "JoinOn": "StudentDocuments.StudentID = Students.StudentID"
+        },
+        {
+          "Table": "DocumentMaster",
+          "JoinOn": "StudentDocuments.DocumentID = DocumentMaster.DocumentID"
+        },
+        {
+          "Table": "Sections",
+          "JoinOn": "Students.CurrentSectionID = Sections.SectionID"
+        },
+        {
+          "Table": "Classes",
+          "JoinOn": "Sections.ClassID = Classes.ClassID"
+        }
+      ]
+    },
+
+    {
+      "EntityType": "StaffDocument",
+      "Synonyms": [
+        "staff documents",
+        "employee documents",
+        "appointment letter",
+        "offer letter",
+        "joining letter",
+        "relieving letter",
+        "experience letter",
+        "noc",
+        "termination letter",
+        "resume",
+        "cv",
+        "curriculum vitae",
+        "id card",
+        "employee id",
+        "contract",
+        "agreement",
+        "bond",
+        "nda",
+        "increment letter",
+        "promotion letter",
+        "transfer letter",
+        "warning letter",
+        "show cause letter",
+        "payslip",
+        "salary slip",
+        "salary certificate",
+        "pf form",
+        "gratuity document",
+        "staff record",
+        "staff profile",
+        "staff file"
+      ],
+      "PrimaryTable": "StaffDocuments",
+      "IdentifierColumns": [ "StaffID", "DocumentID" ],
+      "DisplayColumns": [
+        "DocumentName",
+        "IssueDate"
+      ],
+      "JoinTables": [
+        {
+          "Table": "StaffMaster",
+          "JoinOn": "StaffDocuments.StaffID = StaffMaster.StaffID"
+        },
+        {
+          "Table": "StaffDocuments",
+          "JoinOn": "StaffDocuments.StaffDocumentID = StaffDocuments.StaffDocumentID"
+        },
+        {
+          "Table": "Departments",
+          "JoinOn": "StaffMaster.DepartmentID = Departments.DepartmentID"
+        }
+      ],
+      "FilterHints": {
+        "SubmissionStatus": "StaffDocuments.IsSubmitted",
+        "PendingDocuments": "StaffDocuments.IsSubmitted = 0",
+        "ExpiryTracking": "StaffDocuments.ExpiryDate"
+      }
     }
   ]
 }

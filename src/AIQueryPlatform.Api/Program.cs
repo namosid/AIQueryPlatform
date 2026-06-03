@@ -191,7 +191,7 @@ _ = Task.Run(async () =>
         var activeTenants = tenants.Where(t => t.IsActive).ToList();
         
         Log.Information("Pre-warming schema cache for {Count} active tenant(s)", activeTenants.Count);
-        
+
         foreach (var tenant in activeTenants)
         {
             try
@@ -204,7 +204,7 @@ _ = Task.Run(async () =>
                 Log.Warning(ex, "Failed to pre-load schema for tenant {TenantName} ({TenantId})", tenant.Name, tenant.TenantId);
             }
         }
-        
+
         Log.Information("Schema cache pre-warming completed");
     }
     catch (Exception ex)

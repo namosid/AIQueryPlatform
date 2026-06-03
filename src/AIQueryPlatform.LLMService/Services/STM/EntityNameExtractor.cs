@@ -23,7 +23,47 @@ namespace AIQueryPlatform.LLMServiceOperator.Services.STM
         // ── EntityType mirrors the logical types used in ExtractedEntity ─────
         public enum EntityType
         {
-            Student, Staff, Teacher, Class, Section, Unknown, Pronoun
+            // ── People ────────────────────────────────────────────────────────
+            Student,
+            Staff,
+            Teacher,
+
+            // ── Academic Structure ────────────────────────────────────────────
+            Class,
+            Section,
+            Subject,
+            Syllabus,
+            Timetable,
+            Examination,
+
+            // ── Attendance ────────────────────────────────────────────────────
+            Attendance,
+
+            // ── Finance ───────────────────────────────────────────────────────
+            Fees,
+            FeeCollection,
+
+            // ── Documents ────────────────────────────────────────────────────
+            StudentDocument,
+            StaffDocument,
+
+            // ── Transport ────────────────────────────────────────────────────
+            Transport,
+            Route,
+
+            // ── Hostel ───────────────────────────────────────────────────────
+            Hostel,
+
+            // ── Library ──────────────────────────────────────────────────────
+            Library,
+
+            // ── Communication ────────────────────────────────────────────────
+            Notice,
+            Event,
+
+            // ── System / STM ─────────────────────────────────────────────────
+            Unknown,
+            Pronoun
         }
 
         public record ExtractedEntity(
@@ -102,23 +142,33 @@ namespace AIQueryPlatform.LLMServiceOperator.Services.STM
 
             // Case 1 — explicit entity with a real name/ID found
             if (!extracted.IsPronoun && extracted.Name != null)
-                return extracted;
+            {
+                var validation = EnumValidator.Validate(extracted.Type, extracted.Name);
+
+                if (validation.IsValid)
+                {
+                    // PassThrough or matched — use resolved value
+                    return extracted with { Name = validation.ResolvedValue };
+                }
+                // No enum match — log and fall through to clarification
+                Helper.LogMessage(string.Format(
+                    "Enum validation failed for {0} = '{1}'", extracted.Type, extracted.Name));
+                return extracted with { Name = null };   // triggers clarification upstream
+            }
 
             // Case 2 — pronoun: resolve from last turn
             var words = originalPrompt.Split(' ', StringSplitOptions.RemoveEmptyEntries);
             bool hasPronoun = words.Any(w => Pronouns.Contains(w));
-
             if (hasPronoun && lastTurn?.ResolvedEntity != null)
                 return lastTurn.ResolvedEntity with { IsPronoun = false };
 
-            // Case 3 — continuation query ("include attendance information")
+            // Case 3 — continuation query → resolve from last turn
             if (extracted.Name == null && lastTurn?.ResolvedEntity != null)
             {
                 Helper.LogMessage(string.Format(
                     "Continuation query detected — resolved entity from last turn: {0} = {1}",
                     lastTurn.ResolvedEntity.Type,
                     lastTurn.ResolvedEntity.Name));
-
                 return lastTurn.ResolvedEntity with { IsPronoun = false };
             }
 
@@ -152,5 +202,7 @@ namespace AIQueryPlatform.LLMServiceOperator.Services.STM
             return KeywordStemsByType.TryGetValue(entityType, out var stems)
                 && stems.Contains(value);
         }
+
+
     }
 }

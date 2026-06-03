@@ -320,7 +320,7 @@ public class QueryOrchestrationService : IQueryOrchestrationService
             if (response.Type == ResponseType.SQL)
             {
                 string sql = response.SQL;
-                // Validate SQL
+                //Validate SQL
                 if (!_sqlValidatorService.IsValidSelectQuery(sql, out var validationError))
                 {
                     return new QueryResponse

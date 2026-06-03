@@ -77,8 +77,13 @@ namespace AIQueryPlatform.LLMServiceOperator.Services.Qdrant
 
             // ── Class / Section ──────────────────────────────────────────────────
 
-            // "class 10A", "grade 9", "std 8B" → value = "10A" / "9" / "8B"
-            (new Regex(@"\b(?:class|grade|std)\s*(?<value>[1-9][0-9]?\s*[A-Za-z]?)\b",
+            // "Class 9A", "Grade 9A", "Std 8B" → ClassValue = "Grade 9", SectionValue = "A"
+            (new Regex(@"\b(?:class|grade|std)\s*(?<ClassValue>[1-9][0-9]?)\s*(?<SectionValue>[A-Za-z])?\b",
+                RegexOptions.IgnoreCase), "Class", true),
+
+            // "Class Grade 9A" → skip "Class", fire on "Grade 9A"
+            // (keep the negative lookahead fix from before)
+            (new Regex(@"\b(?:class|grade|std)\s*(?!(?:class|grade|std)\b)(?<ClassValue>[1-9][0-9]?)\s*(?<SectionValue>[A-Za-z])?\b",
                 RegexOptions.IgnoreCase), "Class", true),
 
             // generic "classes"
@@ -213,6 +218,47 @@ namespace AIQueryPlatform.LLMServiceOperator.Services.Qdrant
 
             (new Regex(@"\bdepartments?\b",  RegexOptions.IgnoreCase), "Department", false),
             (new Regex(@"\bdept\b",          RegexOptions.IgnoreCase), "Department", false),
+
+
+            // ── Staff Document ────────────────────────────────────────────────────
+            (new Regex(@"\bstaff\s*documents?\b",                          RegexOptions.IgnoreCase), "StaffDocument", false),
+            (new Regex(@"\b(?:appointment|offer|joining|relieving|experience|noc|termination)\s*letters?\b",
+                RegexOptions.IgnoreCase), "StaffDocument", false),
+            (new Regex(@"\b(?:resume|cv|curriculum\s*vitae|bio\s*data)\b", RegexOptions.IgnoreCase), "StaffDocument", false),
+            (new Regex(@"\b(?:id\s*card|identity\s*card|employee\s*id|staff\s*id)\b",
+                RegexOptions.IgnoreCase), "StaffDocument", false),
+            (new Regex(@"\b(?:contract|agreement|bond|nda|mou)\b",         RegexOptions.IgnoreCase), "StaffDocument", false),
+            (new Regex(@"\b(?:increment|promotion|transfer|suspension|warning|show\s*cause)\s*letters?\b",
+                RegexOptions.IgnoreCase), "StaffDocument", false),
+            (new Regex(@"\b(?:payslip|salary\s*slip|pay\s*stub|salary\s*certificate)\b",
+                RegexOptions.IgnoreCase), "StaffDocument", false),
+            (new Regex(@"\b(?:pf|provident\s*fund|gratuity|epf)\s*(?:form|document|letter)?\b",
+                RegexOptions.IgnoreCase), "StaffDocument", false),
+            (new Regex(@"\bstaff\s*(?:record|profile|file|detail|info(?:rmation)?)\b",
+                RegexOptions.IgnoreCase), "StaffDocument", false),
+
+
+            // ── Student Document ──────────────────────────────────────────────────
+            (new Regex(@"\bstudent\s*documents?\b",                        RegexOptions.IgnoreCase), "StudentDocument", false),
+            (new Regex(@"\b(?:admission|enrollment|enrolment)\s*form\b",   RegexOptions.IgnoreCase), "StudentDocument", false),
+            (new Regex(@"\b(?:tc|transfer\s*certificate|leaving\s*certificate|lc|school\s*leaving)\b",
+                RegexOptions.IgnoreCase), "StudentDocument", false),
+            (new Regex(@"\b(?:bonafide|character|conduct|migration)\s*certificate\b",
+                RegexOptions.IgnoreCase), "StudentDocument", false),
+            (new Regex(@"\b(?:mark\s*sheet|marksheet|grade\s*card|report\s*card|progress\s*report)\b",
+                RegexOptions.IgnoreCase), "StudentDocument", false),
+            (new Regex(@"\b(?:id\s*card|identity\s*card|student\s*id|library\s*card)\b",
+                RegexOptions.IgnoreCase), "StudentDocument", false),
+            (new Regex(@"\b(?:birth\s*certificate|dob\s*proof|age\s*proof)\b",
+                RegexOptions.IgnoreCase), "StudentDocument", false),
+            (new Regex(@"\b(?:fee\s*receipt|payment\s*receipt|fee\s*certificate|scholarship)\s*(?:form|letter|document)?\b",
+                RegexOptions.IgnoreCase), "StudentDocument", false),
+            (new Regex(@"\bstudent\s*(?:record|profile|file|detail|info(?:rmation)?)\b",
+                RegexOptions.IgnoreCase), "StudentDocument", false),
+            (new Regex(@"\b(?:aadhar|aadhaar|pan|passport|ration\s*card)\b",
+                RegexOptions.IgnoreCase), "StudentDocument", false),
+            (new Regex(@"\b(?:admission|enrollment|enrolment)\s*(?:form|documents?|record|file|paper)s?\b",
+                RegexOptions.IgnoreCase), "StudentDocument", false),
         };
 
         // ── Entity types that map to an individual person (used by STM) ─────

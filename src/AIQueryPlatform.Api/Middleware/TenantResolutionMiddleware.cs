@@ -23,7 +23,7 @@ public class TenantResolutionMiddleware
         HttpContext context,
         ITenantService tenantService,
         TenantContext tenantContext)
-    {
+    {                                   
         try
         {
             // Try to get API key from header
