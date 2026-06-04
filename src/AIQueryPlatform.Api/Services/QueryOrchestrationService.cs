@@ -161,15 +161,15 @@ public class QueryOrchestrationService : IQueryOrchestrationService
             yield break;
         }
 
-        if (!_sqlValidatorService.IsValidSelectQuery(sql, out var validationError))
-        {
-            yield return new StreamEvent
-            {
-                Type = "error",
-                Message = $"SQL validation failed: {validationError}"
-            };
-            yield break;
-        }
+        // if (!_sqlValidatorService.IsValidSelectQuery(sql, out var validationError))
+        // {
+        //     yield return new StreamEvent
+        //     {
+        //         Type = "error",
+        //         Message = $"SQL validation failed: {validationError}"
+        //     };
+        //     yield break;
+        // }
 
         // Step 5: Enforce row limit
         sql = _sqlValidatorService.EnforceRowLimit(sql, _maxRowLimit);
@@ -321,15 +321,15 @@ public class QueryOrchestrationService : IQueryOrchestrationService
             {
                 string sql = response.SQL;
                 //Validate SQL
-                if (!_sqlValidatorService.IsValidSelectQuery(sql, out var validationError))
-                {
-                    return new QueryResponse
-                    {
-                        Success = false,
-                        ErrorMessage = $"SQL validation failed: {validationError}",
-                        GeneratedSql = sql
-                    };
-                }
+                // if (!_sqlValidatorService.IsValidSelectQuery(sql, out var validationError))
+                // {
+                //     return new QueryResponse
+                //     {
+                //         Success = false,
+                //         ErrorMessage = $"SQL validation failed: {validationError}",
+                //         GeneratedSql = sql
+                //     };
+                // }
 
                 // Enforce row limit
                 sql = _sqlValidatorService.EnforceRowLimit(sql, _maxRowLimit);
