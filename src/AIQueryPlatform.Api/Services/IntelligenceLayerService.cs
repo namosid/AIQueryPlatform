@@ -225,19 +225,42 @@ public class IntelligenceLayerService : IIntelligenceLayerService
         // Check if we have at least one numeric column (excluding first column which is labels)
         var hasNumericColumn = false;
         
+        //ChartSuitable, consider these additional boundary cases for numeric column detection:
+
+        // 1. Exclude columns that are likely to be phone numbers, IDs, or codes (e.g., "phone", "phone number", "mobile", "contact", "id", "code", "ssn", "passport", "account number").
+        // 2. Exclude columns where all values are the same (no variance, not useful for charting).
+        // 3. Exclude columns where values are too long (e.g., >15 digits, likely not a true metric).
+        // 4. Exclude columns where >80% of values are null or empty (not enough data).
+        // 5. Exclude columns where values are not positive numbers (if only positive metrics are meaningful).
+
+        // Example: Update the exclusion regex and add checks for value length and variance.
         for (int colIndex = 1; colIndex < result.Columns.Count; colIndex++)
         {
             var column = result.Columns[colIndex];
-            foreach (var row in result.Rows.Take(5)) // Check first 5 rows
+            // Exclude columns that are likely to be identifiers or contact info
+            if (Regex.IsMatch(column, @"(phone(\s*number)?|mobile|contact|id|code|ssn|passport|account(\s*number)?)", RegexOptions.IgnoreCase))
             {
-                var value = row[column];
-                if (IsNumeric(value))
-                {
-                    hasNumericColumn = true;
-                    break;
-                }
+                continue;
             }
-            if (hasNumericColumn) break;
+
+            var values = result.Rows.Take(10).Select(row => row[column]).Where(v => v != null && IsNumeric(v)).ToList();
+            if (values.Count == 0)
+                continue;
+
+            // Exclude if all values are the same
+            if (values.Select(v => v.ToString()).Distinct().Count() == 1)
+                continue;
+
+            // Exclude if any value is too long (likely not a metric)
+            if (values.Any(v => v.ToString()!.Length > 15))
+                continue;
+
+            // Exclude if too many nulls
+            if (values.Count < result.Rows.Take(10).Count() * 0.2)
+                continue;
+
+            hasNumericColumn = true;
+            break;
         }
 
         return hasNumericColumn;

@@ -1263,3 +1263,112 @@ textarea {
     grid-template-columns: 1fr;
   }
 }
+
+/* ==================== TAB VIEW ==================== */
+
+.tab-view {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin: 16px 0;
+}
+
+.tab-headers {
+  display: flex;
+  border-bottom: 2px solid var(--border-color, #e5e7eb);
+  gap: 4px;
+  margin-bottom: 20px;
+}
+
+.tab-header {
+  flex: 1;
+  padding: 12px 20px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted, #6b7280);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  position: relative;
+}
+
+.tab-header:hover {
+  color: var(--primary-color, #3b82f6);
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.tab-header.active {
+  color: var(--primary-color, #3b82f6);
+  border-bottom-color: var(--primary-color, #3b82f6);
+  font-weight: 600;
+}
+
+.tab-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tab-label {
+  white-space: nowrap;
+}
+
+.tab-content {
+  animation: tabFadeIn 0.3s ease;
+}
+
+@keyframes tabFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Modal-specific tab adjustments */
+.modal-result-tabs {
+  margin: 20px 0;
+}
+
+.modal-result-tabs .tab-headers {
+  padding: 0;
+  border-bottom-width: 2px;
+}
+
+.modal-result-tabs .tab-header {
+  padding: 14px 24px;
+  font-size: 15px;
+}
+
+.modal-result-tabs .tab-content {
+  padding: 0;
+}
+
+/* Dark theme support for tabs */
+.theme-dark .tab-headers {
+  border-bottom-color: #374151;
+}
+
+.theme-dark .tab-header {
+  color: #9ca3af;
+}
+
+.theme-dark .tab-header:hover {
+  color: #60a5fa;
+  background: rgba(96, 165, 250, 0.1);
+}
+
+.theme-dark .tab-header.active {
+  color: #60a5fa;
+  border-bottom-color: #60a5fa;
+}

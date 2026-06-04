@@ -4,6 +4,7 @@ import InsightCard from './InsightCard';
 import QueryBar from './QueryBar';
 import SuggestedQueries from './SuggestedQueries';
 import StateManager from '../state/StateManager';
+import TabView, { Tab } from './TabView';
 
 // Simple chart renderer for widget
 const SimpleChartRenderer: React.FC<{ data: ChartData }> = ({ data }) => {
@@ -274,7 +275,32 @@ const WidgetPanel: React.FC<WidgetPanelProps> = ({
               <div className="ai-widget-result-success">
                 <h4>Query Result:</h4>
                 
-                {/* Display chart if available and valid */}
+                {/* Temporary Debug Message
+                {(() => {
+                  const hasChart = queryResult.data?.visualizationType === 'Chart' && 
+                                  queryResult.data?.chartData && 
+                                  queryResult.data.chartData.labels && 
+                                  queryResult.data.chartData.labels.length > 0;
+                  const hasTable = queryResult.data?.result?.rows && queryResult.data.result.rows.length > 0;
+                  
+                  return (
+                    <div style={{ 
+                      padding: '8px', 
+                      background: '#fffbeb', 
+                      border: '1px solid #fbbf24', 
+                      borderRadius: '4px',
+                      marginBottom: '12px',
+                      fontSize: '12px'
+                    }}>
+                      <strong>🐛 Debug Info:</strong> {' '}
+                      Chart: {hasChart ? '✅' : '❌'} | {' '}
+                      Table: {hasTable ? '✅' : '❌'} | {' '}
+                      <strong>Tabs: {hasChart && hasTable ? '✅ Should Show' : '❌ Not Both Present'}</strong>
+                    </div>
+                  );
+                })()} */}
+                
+                {/* Check if we have both chart and table data */}
                 {(() => {
                   const shouldShowChart = queryResult.data?.visualizationType === 'Chart' && 
                                          queryResult.data?.chartData && 
@@ -283,6 +309,9 @@ const WidgetPanel: React.FC<WidgetPanelProps> = ({
                                          queryResult.data.chartData.datasets &&
                                          queryResult.data.chartData.datasets.length > 0;
                   
+                  const hasTableData = queryResult.data?.result?.rows && queryResult.data.result.rows.length > 0;
+                  
+                  console.log('[WidgetPanel] ===== TAB DISPLAY DEBUG =====');
                   console.log('[WidgetPanel] Chart check:', {
                     visualizationType: queryResult.data?.visualizationType,
                     hasChartData: !!queryResult.data?.chartData,
@@ -290,86 +319,194 @@ const WidgetPanel: React.FC<WidgetPanelProps> = ({
                     labelsLength: queryResult.data?.chartData?.labels?.length,
                     hasDatasets: !!queryResult.data?.chartData?.datasets,
                     datasetsLength: queryResult.data?.chartData?.datasets?.length,
-                    shouldShowChart
+                    shouldShowChart,
+                    hasTableData,
+                    willShowTabs: shouldShowChart && hasTableData
                   });
+                  console.log('[WidgetPanel] Full queryResult.data:', queryResult.data);
+                  console.log('[WidgetPanel] =============================');
                   
-                  return shouldShowChart ? (
-                    <div className="result-chart-section">
-                      <div className="result-meta">
-                        <span className="result-badge">📊 {queryResult.data.chartData.chartType || 'Chart'}</span>
-                        <span className="result-badge">⏱️ {queryResult.data.executionTimeMs}ms</span>
+                  // If we have both chart and table, show tabs
+                  if (shouldShowChart && hasTableData) {
+                    const tabs: Tab[] = [
+                      {
+                        id: 'results',
+                        label: 'Results',
+                        icon: (
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="3" y="3" width="7" height="7" stroke="currentColor" strokeWidth="2" />
+                            <rect x="14" y="3" width="7" height="7" stroke="currentColor" strokeWidth="2" />
+                            <rect x="3" y="14" width="7" height="7" stroke="currentColor" strokeWidth="2" />
+                            <rect x="14" y="14" width="7" height="7" stroke="currentColor" strokeWidth="2" />
+                          </svg>
+                        ),
+                        content: (
+                          <div className="result-table-container">
+                            <div className="result-summary">
+                              {queryResult.data.result.rowCount} row{queryResult.data.result.rowCount !== 1 ? 's' : ''} returned
+                            </div>
+                            <div className="result-table-wrapper">
+                              <table className="result-table">
+                                <thead>
+                                  <tr>
+                                    {queryResult.data.result.columns.map((col: string, idx: number) => (
+                                      <th key={idx}>{col}</th>
+                                    ))}
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {queryResult.data.result.rows.slice(0, 5).map((row: any, rowIdx: number) => (
+                                    <tr key={rowIdx}>
+                                      {queryResult.data.result.columns.map((col: string, colIdx: number) => (
+                                        <td key={colIdx}>
+                                          {typeof row[col] === 'number' 
+                                            ? row[col].toLocaleString(undefined, { maximumFractionDigits: 2 })
+                                            : row[col]?.toString() || '-'}
+                                        </td>
+                                      ))}
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                              {queryResult.data.result.rowCount > 5 && (
+                                <button className="result-more-link" onClick={handleExploreDeeperClick}>
+                                  View all {queryResult.data.result.rowCount} rows →
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      },
+                      {
+                        id: 'chart',
+                        label: 'Chart',
+                        icon: (
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M3 3v18h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                            <path d="M7 16V11M12 16V8M17 16V13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                          </svg>
+                        ),
+                        content: (
+                          <div className="result-chart-section">
+                            <div className="result-meta">
+                              <span className="result-badge">📊 {queryResult.data.chartData.chartType || 'Chart'}</span>
+                              <span className="result-badge">⏱️ {queryResult.data.executionTimeMs}ms</span>
+                            </div>
+                            <SimpleChartRenderer data={queryResult.data.chartData} />
+                          </div>
+                        )
+                      }
+                    ];
+                    
+                    return (
+                      <>
+                        <TabView tabs={tabs} defaultTab="results" className="widget-result-tabs" />
+                        
+                        {/* Explore Deeper Button */}
+                        <div className="ai-widget-cta-inline">
+                          <button
+                            className="ai-widget-explore-btn"
+                            onClick={handleExploreDeeperClick}
+                            title="Open fullscreen AI workspace"
+                          >
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path
+                                d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                            </svg>
+                            Explore Deeper
+                          </button>
+                        </div>
+                      </>
+                    );
+                  }
+                  
+                  // If we only have chart data
+                  if (shouldShowChart && !hasTableData) {
+                    return (
+                      <div className="result-chart-section">
+                        <div className="result-meta">
+                          <span className="result-badge">📊 {queryResult.data.chartData.chartType || 'Chart'}</span>
+                          <span className="result-badge">⏱️ {queryResult.data.executionTimeMs}ms</span>
+                        </div>
+                        <SimpleChartRenderer data={queryResult.data.chartData} />
                       </div>
-                      <SimpleChartRenderer data={queryResult.data.chartData} />
+                    );
+                  }
+                  
+                  // If we only have table data
+                  if (!shouldShowChart && hasTableData) {
+                    return (
+                      <>
+                        <div className="result-table-container">
+                          <div className="result-summary">
+                            {queryResult.data.result.rowCount} row{queryResult.data.result.rowCount !== 1 ? 's' : ''} returned
+                          </div>
+                          <div className="result-table-wrapper">
+                            <table className="result-table">
+                              <thead>
+                                <tr>
+                                  {queryResult.data.result.columns.map((col: string, idx: number) => (
+                                    <th key={idx}>{col}</th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {queryResult.data.result.rows.slice(0, 5).map((row: any, rowIdx: number) => (
+                                  <tr key={rowIdx}>
+                                    {queryResult.data.result.columns.map((col: string, colIdx: number) => (
+                                      <td key={colIdx}>
+                                        {typeof row[col] === 'number' 
+                                          ? row[col].toLocaleString(undefined, { maximumFractionDigits: 2 })
+                                          : row[col]?.toString() || '-'}
+                                      </td>
+                                    ))}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                            {queryResult.data.result.rowCount > 5 && (
+                              <button className="result-more-link" onClick={handleExploreDeeperClick}>
+                                View all {queryResult.data.result.rowCount} rows →
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {/* Explore Deeper Button */}
+                        <div className="ai-widget-cta-inline">
+                          <button
+                            className="ai-widget-explore-btn"
+                            onClick={handleExploreDeeperClick}
+                            title="Open fullscreen AI workspace"
+                          >
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path
+                                d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                            </svg>
+                            Explore Deeper
+                          </button>
+                        </div>
+                      </>
+                    );
+                  }
+                  
+                  // Fallback: Display JSON if no structured data
+                  return (
+                    <div className="result-json">
+                      <pre>{JSON.stringify(queryResult.data, null, 2)}</pre>
                     </div>
-                  ) : null;
+                  );
                 })()}
-
-                {/* Explore Deeper Button - positioned between chart and table */}
-                {queryResult.data?.result?.rows && queryResult.data.result.rows.length > 0 && (
-                  <div className="ai-widget-cta-inline">
-                    <button
-                      className="ai-widget-explore-btn"
-                      onClick={handleExploreDeeperClick}
-                      title="Open fullscreen AI workspace"
-                    >
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path
-                          d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                      Explore Deeper
-                    </button>
-                  </div>
-                )}
-
-                {/* Display table data if available */}
-                {queryResult.data?.result?.rows && queryResult.data.result.rows.length > 0 && (
-                  <div className="result-table-container">
-                    <div className="result-summary">
-                      {queryResult.data.result.rowCount} row{queryResult.data.result.rowCount !== 1 ? 's' : ''} returned
-                    </div>
-                    <div className="result-table-wrapper">
-                      <table className="result-table">
-                        <thead>
-                          <tr>
-                            {queryResult.data.result.columns.map((col: string, idx: number) => (
-                              <th key={idx}>{col}</th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {queryResult.data.result.rows.slice(0, 5).map((row: any, rowIdx: number) => (
-                            <tr key={rowIdx}>
-                              {queryResult.data.result.columns.map((col: string, colIdx: number) => (
-                                <td key={colIdx}>
-                                  {typeof row[col] === 'number' 
-                                    ? row[col].toLocaleString(undefined, { maximumFractionDigits: 2 })
-                                    : row[col]?.toString() || '-'}
-                                </td>
-                              ))}
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                      {queryResult.data.result.rowCount > 5 && (
-                        <button className="result-more-link" onClick={handleExploreDeeperClick}>
-                          View all {queryResult.data.result.rowCount} rows →
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                )}
-                
-                {/* Display JSON fallback if no structured data */}
-                {!queryResult.data?.result?.rows && !queryResult.data?.chartData && (
-                  <div className="result-json">
-                    <pre>{JSON.stringify(queryResult.data, null, 2)}</pre>
-                  </div>
-                )}
               </div>
             ) : (
               <div className="ai-widget-result-error">

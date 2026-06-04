@@ -7,6 +7,7 @@ import React from 'react';
 import type { VisualizationData } from '../../../types/modal';
 import TableRenderer from './TableRenderer';
 import ChartRenderer from './ChartRenderer';
+import TabView, { Tab } from '../../../components/TabView';
 
 interface ResponseRendererProps {
   visualization: VisualizationData;
@@ -54,7 +55,54 @@ const ResponseRenderer: React.FC<ResponseRendererProps> = ({ visualization }) =>
       ) : null;
 
     case 'mixed':
-      return visualization.components ? (
+      if (!visualization.components) return null;
+      
+      // Check if we have both table and chart components
+      const tableComponent = visualization.components.find((c: any) => c.type === 'table');
+      const chartComponent = visualization.components.find((c: any) => c.type === 'chart');
+      
+      // If we have both, render in tabs
+      if (tableComponent && chartComponent) {
+        const tabs: Tab[] = [
+          {
+            id: 'results',
+            label: 'Results',
+            icon: (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="3" y="3" width="7" height="7" stroke="currentColor" strokeWidth="2" />
+                <rect x="14" y="3" width="7" height="7" stroke="currentColor" strokeWidth="2" />
+                <rect x="3" y="14" width="7" height="7" stroke="currentColor" strokeWidth="2" />
+                <rect x="14" y="14" width="7" height="7" stroke="currentColor" strokeWidth="2" />
+              </svg>
+            ),
+            content: (
+              <div className="viz-component">
+                <TableRenderer data={tableComponent.data as any} />
+              </div>
+            )
+          },
+          {
+            id: 'chart',
+            label: 'Chart',
+            icon: (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 3v18h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                <path d="M7 16V11M12 16V8M17 16V13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            ),
+            content: (
+              <div className="viz-component">
+                <ChartRenderer data={chartComponent.data as any} />
+              </div>
+            )
+          }
+        ];
+        
+        return <TabView tabs={tabs} defaultTab="results" className="modal-result-tabs" />;
+      }
+      
+      // Otherwise, render all components in a grid
+      return (
         <div className="mixed-visualization">
           {visualization.components.map((component) => (
             <div key={component.id} className="viz-component">
@@ -70,7 +118,7 @@ const ResponseRenderer: React.FC<ResponseRendererProps> = ({ visualization }) =>
             </div>
           ))}
         </div>
-      ) : null;
+      );
 
     default:
       return null;
